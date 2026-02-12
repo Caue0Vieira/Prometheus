@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Escudo do Corpo de Bombeiros -->
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#991B1B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bombGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Escudo -->
+  <path d="M50 10 L20 20 L20 45 Q20 65 35 75 Q50 85 50 85 Q50 85 65 75 Q80 65 80 45 L80 20 Z" 
+        fill="url(#shieldGradient)" 
+        stroke="#7F1D1D" 
+        stroke-width="2"/>
+  
+  <!-- Bomba/Explosão central -->
+  <circle cx="50" cy="45" r="12" fill="url(#bombGradient)" stroke="#92400E" stroke-width="1.5"/>
+  
+  <!-- Faíscas/Explosão -->
+  <g stroke="#FCD34D" stroke-width="2" fill="none" stroke-linecap="round">
+    <!-- Faíscas superiores -->
+    <line x1="50" y1="33" x2="50" y2="28"/>
+    <line x1="45" y1="35" x2="42" y2="32"/>
+    <line x1="55" y1="35" x2="58" y2="32"/>
+    
+    <!-- Faíscas laterais -->
+    <line x1="38" y1="45" x2="33" y2="45"/>
+    <line x1="62" y1="45" x2="67" y2="45"/>
+    
+    <!-- Faíscas inferiores -->
+    <line x1="45" y1="55" x2="42" y2="58"/>
+    <line x1="55" y1="55" x2="58" y2="58"/>
+    <line x1="50" y1="57" x2="50" y2="62"/>
+  </g>
+  
+  <!-- Texto "PB" (Prova Bomb) pequeno -->
+  <text x="50" y="70" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">PB</text>
+</svg>
+
