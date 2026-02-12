@@ -72,8 +72,6 @@ make down    # Para e remove containers
 make stop    # Para sem remover containers
 ```
 
-### Troubleshooting
-
 ### Estrutura de Portas
 
 | Serviço | Porta | Descrição |
@@ -405,28 +403,3 @@ Em um cenário corporativo maior, o sistema poderia evoluir para as seguintes me
   - Kubernetes com HPA (Horizontal Pod Autoscaler)
   - Métricas de fila como trigger
 - **Impacto**: Resposta automática a picos de demanda
-
-### Roadmap Sugerido
-
-**Fase 1 - Observabilidade** (Curto Prazo)
-- Implementar Prometheus + Grafana
-- Adicionar Correlation-ID
-- Criar dashboards básicos
-
-**Fase 2 - Resiliência** (Médio Prazo)
-- DLQ estruturada no RabbitMQ
-- Retry automático com backoff
-- Circuit breakers
-
-**Fase 3 - Escalabilidade** (Longo Prazo)
-- CQRS completo
-- Event Sourcing
-- Autoscaling
-- API Gateway
-
-**Fase 4 - Segurança** (Contínuo)
-- Migração para OAuth2/JWT
-- WAF (Web Application Firewall)
-- Rate limiting avançado
-
----
