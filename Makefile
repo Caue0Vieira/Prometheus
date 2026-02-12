@@ -1,9 +1,9 @@
 .PHONY: help network api worker frontend up down clean stop restart logs-api logs-worker
 
 # Variáveis
-API_DIR := api-prova-bomb/docker
-WORKER_DIR := worker-prova-bomb/docker
-FRONTEND_DIR := Front-prova-bomb
+API_DIR := Api-Occurrence/docker
+WORKER_DIR := Worker-Occurrence/docker
+FRONTEND_DIR := Front-Occurrence
 NETWORK_NAME := internal
 
 # Cores para output
