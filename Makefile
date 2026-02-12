@@ -78,22 +78,22 @@ down: ## Para todos os serviços Docker
 
 stop: ## Para todos os serviços sem remover containers
 	@echo "$(YELLOW)Parando serviços Docker (sem remover containers)...$(NC)"
-	@cd $(API_DIR) && docker-compose stop 2>/dev/null || true
-	@cd $(WORKER_DIR) && docker-compose stop 2>/dev/null || true
+	@cd $(API_DIR) && docker-compose -p api stop 2>/dev/null || true
+	@cd $(WORKER_DIR) && docker-compose -p worker stop 2>/dev/null || true
 	@echo "$(GREEN)✓ Serviços Docker parados$(NC)"
 
 restart: stop up ## Reinicia todos os serviços
 
 clean: down ## Remove containers, volumes e rede
 	@echo "$(RED)Removendo containers, volumes e rede...$(NC)"
-	@cd $(API_DIR) && docker-compose down -v 2>/dev/null || true
-	@cd $(WORKER_DIR) && docker-compose down -v 2>/dev/null || true
+	@cd $(API_DIR) && docker-compose -p api down -v 2>/dev/null || true
+	@cd $(WORKER_DIR) && docker-compose -p worker down -v 2>/dev/null || true
 	@docker network rm $(NETWORK_NAME) 2>/dev/null || true
 	@echo "$(GREEN)✓ Limpeza concluída$(NC)"
 
 logs-api: ## Mostra logs da API
-	@cd $(API_DIR) && docker-compose logs -f
+	@cd $(API_DIR) && docker-compose -p api logs -f
 
 logs-worker: ## Mostra logs do Worker
-	@cd $(WORKER_DIR) && docker-compose logs -f
+	@cd $(WORKER_DIR) && docker-compose -p worker logs -f
 
