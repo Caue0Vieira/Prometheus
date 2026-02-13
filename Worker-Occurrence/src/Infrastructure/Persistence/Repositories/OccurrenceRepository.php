@@ -83,6 +83,8 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
      */
     public function findByIdForUpdate(Uuid $id): ?Occurrence
     {
+        // PostgreSQL não permite FOR UPDATE com LEFT JOIN
+        // Primeiro fazemos o lock na tabela principal (sem JOINs)
         $locked = DB::table('occurrences')
             ->where('id', $id->toString())
             ->lockForUpdate()
@@ -92,7 +94,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
             return null;
         }
 
-        // Buscamos os dados completos com JOINs
+        // Depois buscamos os dados completos com JOINs
         $row = DB::table('occurrences as o')
             ->select(
                 'o.*',

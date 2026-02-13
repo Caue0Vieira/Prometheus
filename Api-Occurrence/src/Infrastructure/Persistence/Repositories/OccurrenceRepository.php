@@ -40,7 +40,21 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
         int $perPage = 50,
         int $page = 1
     ): LengthAwarePaginator {
-        $query = DB::table('occurrences')
+        $baseQuery = DB::table('occurrences');
+
+        if ($statusCode !== null) {
+            $baseQuery->where('occurrences.status_code', $statusCode);
+        }
+
+        if ($typeCode !== null) {
+            $baseQuery->where('occurrences.type_code', $typeCode);
+        }
+
+        // Contagem total sem JOINs para melhor performance
+        $total = (clone $baseQuery)->count();
+
+        // Query com JOINs para buscar os dados
+        $query = $baseQuery
             ->select(
                 'occurrences.*',
                 'occurrence_types.name as type_name',
@@ -49,22 +63,12 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'occurrence_status.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types', 'occurrences.type_code', '=', 'occurrence_types.code')
-            ->leftJoin('occurrence_status', 'occurrences.status_code', '=', 'occurrence_status.code');
-
-        if ($statusCode !== null) {
-            $query->where('occurrences.status_code', $statusCode);
-        }
-
-        if ($typeCode !== null) {
-            $query->where('occurrences.type_code', $typeCode);
-        }
-
-        $query->orderBy('occurrences.created_at', 'desc');
-
-        $total = $query->count();
-        $items = $query
+            ->leftJoin('occurrence_status', 'occurrences.status_code', '=', 'occurrence_status.code')
+            ->orderBy('occurrences.created_at', 'desc')
             ->limit($perPage)
-            ->offset(($page - 1) * $perPage)
+            ->offset(($page - 1) * $perPage);
+
+        $items = $query
             ->get()
             ->map(fn ($row) => Occurrence::fromArray((array) $row))
             ->all();
