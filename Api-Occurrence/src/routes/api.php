@@ -28,6 +28,8 @@ Route::middleware([
 
         Route::get('/', [OccurrenceController::class, 'index']);
 
+        Route::get('/types', [OccurrenceController::class, 'findOccurrenceTypes']);
+
         Route::get('/{id}', [OccurrenceController::class, 'show']);
 
         Route::post('/{id}/start', [OccurrenceController::class, 'start'])

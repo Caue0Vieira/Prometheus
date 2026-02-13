@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Infrastructure\Persistence\Repositories;
 
+use Domain\Occurrence\Collections\OccurrenceTypeCollection;
 use Domain\Occurrence\Entities\Occurrence;
-use Domain\Shared\ValueObjects\Uuid;
-use Illuminate\Support\Facades\DB;
+use Domain\Occurrence\Entities\OccurrenceType;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
+use Domain\Shared\ValueObjects\Uuid;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class OccurrenceRepository implements OccurrenceRepositoryInterface
 {
@@ -102,5 +104,19 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
         $data['dispatches'] = array_map(fn ($r) => (array) $r, $dispatchRows->all());
 
         return Occurrence::fromArray($data);
+    }
+
+    public function findOccurrenceTypes(): OccurrenceTypeCollection
+    {
+        $types = DB::table('occurrence_types')
+            ->select('code', 'name')
+            ->orderBy('name')
+            ->get()
+            ->map(
+                fn ($row) => OccurrenceType::fromArray((array) $row)
+            )
+            ->all();
+
+        return new OccurrenceTypeCollection($types);
     }
 }

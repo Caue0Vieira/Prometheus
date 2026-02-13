@@ -11,6 +11,7 @@ use Application\UseCases\ResolveOccurrence\ResolveOccurrenceCommand;
 use Application\UseCases\ResolveOccurrence\ResolveOccurrenceHandler;
 use Application\UseCases\StartOccurrence\StartOccurrenceCommand;
 use Application\UseCases\StartOccurrence\StartOccurrenceHandler;
+use Domain\Occurrence\Collections\OccurrenceTypeCollection;
 use Domain\Occurrence\Entities\Occurrence;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
 use Domain\Shared\ValueObjects\Uuid;
@@ -90,5 +91,14 @@ readonly class OccurrenceService
         );
 
         return $this->resolveOccurrenceHandler->handle($command);
+    }
+
+    /**
+     * Retorna todos os tipos de ocorrência disponíveis
+     * @return OccurrenceTypeCollection
+     */
+    public function findOccurrenceTypes(): OccurrenceTypeCollection
+    {
+        return $this->occurrenceRepository->findOccurrenceTypes();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Domain\Occurrence\Repositories;
 
+use Domain\Occurrence\Collections\OccurrenceTypeCollection;
 use Domain\Occurrence\Entities\Occurrence;
 use Domain\Shared\ValueObjects\Uuid;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -20,4 +21,10 @@ interface OccurrenceRepositoryInterface
     ): LengthAwarePaginator;
 
     public function findByIdWithDispatches(Uuid $id): ?Occurrence;
+
+    /**
+     * Retorna todos os tipos de ocorrência com code e name
+     * @return OccurrenceTypeCollection
+     */
+    public function findOccurrenceTypes(): OccurrenceTypeCollection;
 }
