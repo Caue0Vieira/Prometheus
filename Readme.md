@@ -2,6 +2,19 @@
 
 ## 1. Como Rodar Backend e Frontend
 
+### Ambiente Recomendado
+
+Para evitar problemas de compatibilidade e permissões, recomenda-se executar todo o projeto em um ambiente Linux (Ubuntu 22.04 ou superior).
+
+> Embora seja possível rodar no Windows ou macOS, o ambiente Ubuntu oferece maior estabilidade com Docker, Make e Node.js.
+
+O ideal é:
+
+- Clonar o projeto diretamente no Ubuntu
+- Ter o Node.js instalado no Ubuntu
+- Executar o make diretamente no terminal do Ubuntu
+- Utilizar Docker Desktop (ou Docker Engine) instalado no Ubuntu
+
 ### Pré-requisitos
 
 Antes de iniciar o projeto, certifique-se de ter instalado:
