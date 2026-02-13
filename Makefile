@@ -1,4 +1,4 @@
-.PHONY: help network clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker \
+.PHONY: help clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker \
         bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
 
 # =========================
@@ -26,8 +26,6 @@ WORKER_DIR := $(WORKER_PATH)/docker
 
 # Caminho para o Frontend
 FRONTEND_DIR := Front-Occurrence
-
-NETWORK_NAME := internal
 
 # =========================
 # Helpers (container id)
@@ -73,15 +71,6 @@ help: ## Mostra esta mensagem de ajuda
 	@echo ""
 
 # =========================
-# Rede Docker
-# =========================
-network: ## Cria a rede Docker 'internal' se não existir
-	@echo "$(GREEN)Verificando rede Docker '$(NETWORK_NAME)'...$(NC)"
-	@docker network inspect $(NETWORK_NAME) >/dev/null 2>&1 || \
-		(docker network create $(NETWORK_NAME) && \
-		echo "$(GREEN)✓ Rede '$(NETWORK_NAME)' criada com sucesso$(NC)")
-
-# =========================
 # Clone
 # =========================
 clone: clone-api clone-worker ## Clona API e Worker (se não existirem)
@@ -112,14 +101,14 @@ clone-worker: ## Clona o Worker no caminho escolhido (WORKER_PATH)
 # =========================
 # Subidas
 # =========================
-api: network clone-api ## Inicia a API
+api: clone-api ## Inicia a API
 	@echo "$(GREEN)Iniciando API...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api up -d
 	@echo "$(GREEN)✓ API iniciada$(NC)"
 	@sleep 2
 	@$(MAKE) setup-api
 
-worker: network clone-worker ## Inicia o Worker
+worker: clone-worker ## Inicia o Worker
 	@echo "$(GREEN)Iniciando Worker...$(NC)"
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
 	@echo "$(GREEN)✓ Worker iniciado$(NC)"
@@ -135,7 +124,7 @@ frontend: ## Inicia o Frontend
 	@cd $(FRONTEND_DIR) && npm run dev
 	@echo "$(GREEN)✓ Frontend iniciado$(NC)"
 
-up: network clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
+up: clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
 	@echo "$(GREEN)=== Iniciando todos os serviços ===$(NC)"
 	@echo ""
 	@$(MAKE) api
@@ -150,11 +139,11 @@ up: network clone ## Inicia todos os serviços na ordem: API -> Worker -> Fronte
 # =========================
 # Setup / Artisan (API)
 # =========================
-bash-api: api ## Abre bash no container da API
+bash-api: ## Abre bash no container da API
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@docker exec -it $(API_CID) bash
 
-setup-api: api ## .env + composer + key + migrate/seed + swagger
+setup-api: ## .env + composer + key + migrate/seed + swagger
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@echo "$(GREEN)Rodando setup da API...$(NC)"
 	@$(API_EXEC) "cp -n .env.example .env || true"
@@ -164,26 +153,26 @@ setup-api: api ## .env + composer + key + migrate/seed + swagger
 	@$(API_EXEC) "php artisan l5-swagger:generate || true"
 	@echo "$(GREEN)✓ Setup da API concluído$(NC)"
 
-migrate-api: api
+migrate-api:
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan migrate:fresh --force"
 
-seed-api: api
+seed-api:
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan db:seed --force"
 
-swagger-api: api
+swagger-api:
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan l5-swagger:generate"
 
 # =========================
 # Setup / Artisan (Worker)
 # =========================
-bash-worker: worker ## Abre bash no container do Worker
+bash-worker: ## Abre bash no container do Worker
 	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
 	@docker exec -it $(WORKER_CID) bash
 
-setup-worker: worker
+setup-worker:
 	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
 	@echo "$(GREEN)Rodando setup do Worker...$(NC)"
 	@$(WORKER_EXEC) "cp -n .env.example .env || true"
@@ -211,7 +200,6 @@ clean: down ## Remove containers, volumes e rede
 	@echo "$(RED)Removendo containers, volumes e rede...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api down -v 2>/dev/null || true
 	@cd "$(WORKER_DIR)" && docker-compose -p worker down -v 2>/dev/null || true
-	@docker network rm "$(NETWORK_NAME)" 2>/dev/null || true
 	@echo "$(GREEN)✓ Limpeza concluída$(NC)"
 
 logs-api: ## Mostra logs da API
