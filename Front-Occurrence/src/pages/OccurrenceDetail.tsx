@@ -1,17 +1,14 @@
-/**
- * Página de Detalhe da Ocorrência
- * Exibe informações completas, histórico de dispatches e ações
- */
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useOccurrenceDetail,
   useStartOccurrence,
   useResolveOccurrence,
-  useCreateDispatch,
   useUpdateDispatchStatus,
 } from '../hooks';
+import { createDispatch } from '../api/occurrences';
+import { pollCommandAndSync } from '../hooks/utils';
 import { LoadingSpinner, ErrorAlert, Button } from '../components/common';
 import {
   OccurrenceHeader,
@@ -20,20 +17,60 @@ import {
   DispatchList,
   CreateDispatchModal,
 } from '../components/occurrence';
+import { useToast } from '../contexts/ToastContext';
 
 export const OccurrenceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
 
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [updatingDispatchId, setUpdatingDispatchId] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [processingDispatchCommandId, setProcessingDispatchCommandId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useOccurrenceDetail(id);
   const startMutation = useStartOccurrence();
   const resolveMutation = useResolveOccurrence();
-  const createDispatchMutation = useCreateDispatch();
+  
+  // Hook customizado para criar despacho
+  const createDispatchMutation = useMutation({
+    mutationFn: ({ occurrenceId, data }: { occurrenceId: string; data: { resourceCode: string } }) =>
+      createDispatch(occurrenceId, data),
+    onSuccess: async (response, variables) => {
+      const commandId = (response as { commandId: string }).commandId;
+      const status = (response as { status: string }).status;
+      
+      // Rastreia o commandId para exibir badge "Processando..." durante o polling
+      setProcessingDispatchCommandId(commandId);
+      
+      // Se o status for "accepted", fecha o modal e mostra toast
+      // O polling continuará em background para atualizar o status
+      if (status === 'accepted') {
+        setShowDispatchModal(false);
+        showSuccess('Despacho criado com sucesso! Processando...');
+      }
+      
+      // Inicia o polling para acompanhar o processamento
+      await pollCommandAndSync({
+        queryClient,
+        commandId,
+        occurrenceId: variables.occurrenceId,
+        actionLabel: 'createDispatch',
+        rollbackOnError: () => {
+          // Em caso de erro no polling, limpa o estado
+          setProcessingDispatchCommandId(null);
+          showError('Erro ao processar despacho. Tente novamente.');
+        },
+      });
+      // Limpa o estado de processamento quando o comando for processado com sucesso
+      setProcessingDispatchCommandId(null);
+    },
+  });
+  
   const updateDispatchStatusMutation = useUpdateDispatchStatus();
 
   const occurrence = data?.data;
@@ -76,6 +113,19 @@ export const OccurrenceDetail = () => {
       return () => clearTimeout(timer);
     }
   }, [data, updatingDispatchId, updateDispatchStatusMutation.isPending]);
+
+  // Limpa o estado de processamento quando a ocorrência é atualizada após polling (fallback)
+  // O callback do polling também limpa, mas este é um fallback caso o callback não seja chamado
+  useEffect(() => {
+    if (processingDispatchCommandId && occurrence?.dispatches && occurrence.dispatches.length > 0) {
+      // Quando o polling atualiza, um novo dispatch aparece na lista
+      // Limpa o estado após um pequeno delay para garantir que a UI foi atualizada
+      const timer = setTimeout(() => {
+        setProcessingDispatchCommandId(null);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [occurrence?.dispatches, occurrence?.dispatches.length, processingDispatchCommandId]);
 
   const handleStart = async () => {
     if (!id) return;
@@ -122,12 +172,26 @@ export const OccurrenceDetail = () => {
   const handleCreateDispatch = async (resourceCode: string) => {
     if (!id) return;
 
-    await createDispatchMutation.mutateAsync({
-      occurrenceId: id,
-      data: { resourceCode },
-    });
-    setProcessingMessage('Criando despacho...');
-    setTimeout(() => setProcessingMessage(null), 2000);
+    try {
+      // Chama a mutation - o onSuccess já trata o fechamento do modal e toast quando status for "accepted"
+      await createDispatchMutation.mutateAsync({
+        occurrenceId: id,
+        data: { resourceCode },
+      });
+      
+      // O polling e fechamento do modal já são tratados no onSuccess do mutation
+    } catch (err: unknown) {
+      // Fecha o modal mesmo em caso de erro
+      setShowDispatchModal(false);
+      
+      console.error('Erro ao criar despacho:', err);
+      const errorMessage =
+        (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data?.message ||
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Erro ao criar despacho';
+      // Exibe toast de erro
+      showError(errorMessage);
+    }
   };
 
   if (isLoading) {
@@ -180,6 +244,7 @@ export const OccurrenceDetail = () => {
           isUpdating={updateDispatchStatusMutation.isPending}
           onUpdateStatus={handleUpdateDispatchStatus}
           getNextStatuses={getNextStatuses}
+          processingCommandId={processingDispatchCommandId}
         />
       </div>
 
