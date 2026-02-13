@@ -37,10 +37,6 @@ make help
 # Criar apenas a rede Docker
 make network
 
-# =========================
-# Subir serviços
-# =========================
-
 # Iniciar apenas a API
 make api BASE_DIR=/diretorio/desejado
 
@@ -52,10 +48,6 @@ make frontend
 
 # Iniciar tudo (API + Worker + Frontend)
 make up BASE_DIR=/diretorio/desejado
-
-# =========================
-# Setup Laravel (API)
-# =========================
 
 # Setup completo da API (.env + composer + key + migrate + seed + swagger)
 make setup-api
@@ -72,16 +64,8 @@ make swagger-api
 # Entrar no container da API
 make bash-api
 
-# =========================
-# Setup Worker (se Laravel)
-# =========================
-
 # Entrar no container do Worker
 make bash-worker
-
-# =========================
-# Controle dos containers
-# =========================
 
 # Parar todos os serviços Docker
 make down BASE_DIR=/diretorio/desejado

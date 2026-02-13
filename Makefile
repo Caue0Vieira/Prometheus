@@ -62,9 +62,6 @@ help: ## Mostra esta mensagem de ajuda
 	@echo "$(YELLOW)make swagger-api$(NC)                  - php artisan l5-swagger:generate (API)"
 	@echo "$(YELLOW)make bash-api$(NC)                     - Abre um bash no container da API"
 	@echo "$(YELLOW)make setup-worker$(NC)                 - Setup do Worker (se for Laravel também)"
-	@echo "$(YELLOW)make migrate-worker$(NC)               - php artisan migrate (Worker)"
-	@echo "$(YELLOW)make seed-worker$(NC)                  - php artisan db:seed (Worker)"
-	@echo "$(YELLOW)make swagger-worker$(NC)               - php artisan l5-swagger:generate (Worker)"
 	@echo "$(YELLOW)make bash-worker$(NC)                  - Abre um bash no container do Worker"
 	@echo "$(YELLOW)make down$(NC)                         - Para todos os serviços Docker"
 	@echo "$(YELLOW)make clean$(NC)                        - Remove containers, volumes e rede"
@@ -120,12 +117,14 @@ api: network clone-api ## Inicia a API
 	@cd "$(API_DIR)" && docker-compose -p api up -d
 	@echo "$(GREEN)✓ API iniciada$(NC)"
 	@sleep 2
+	@$(MAKE) setup-api
 
 worker: network clone-worker ## Inicia o Worker
 	@echo "$(GREEN)Iniciando Worker...$(NC)"
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
 	@echo "$(GREEN)✓ Worker iniciado$(NC)"
 	@sleep 2
+	@$(MAKE) setup-worker
 
 frontend: ## Inicia o Frontend
 	@echo "$(GREEN)Iniciando Frontend...$(NC)"
@@ -161,13 +160,13 @@ setup-api: api ## .env + composer + key + migrate/seed + swagger
 	@$(API_EXEC) "cp -n .env.example .env || true"
 	@$(API_EXEC) "composer install --no-interaction --prefer-dist"
 	@$(API_EXEC) "php artisan key:generate --force"
-	@$(API_EXEC) "php artisan migrate --seed --force"
+	@$(API_EXEC) "php artisan migrate:fresh --seed --force"
 	@$(API_EXEC) "php artisan l5-swagger:generate || true"
 	@echo "$(GREEN)✓ Setup da API concluído$(NC)"
 
 migrate-api: api
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
-	@$(API_EXEC) "php artisan migrate --force"
+	@$(API_EXEC) "php artisan migrate:fresh --force"
 
 seed-api: api
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
@@ -183,6 +182,13 @@ swagger-api: api
 bash-worker: worker ## Abre bash no container do Worker
 	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
 	@docker exec -it $(WORKER_CID) bash
+
+setup-worker: worker
+	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
+	@echo "$(GREEN)Rodando setup do Worker...$(NC)"
+	@$(WORKER_EXEC) "cp -n .env.example .env || true"
+	@$(WORKER_EXEC) "composer install --no-interaction --prefer-dist || true"
+	@echo "$(GREEN)✓ Setup do Worker concluído$(NC)"
 
 # =========================
 # Down / Stop / Clean
