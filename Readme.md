@@ -34,14 +34,17 @@ Este comando irá:
 # Ver todos os comandos disponíveis
 make help
 
+# Iniciar todos os sistemas
+make up BASE_DIR= # Diretorio desejado
+
 # Criar apenas a rede Docker
 make network
 
 # Iniciar apenas a API
-make api
+make api BASE_DIR= # Diretorio desejado
 
 # Iniciar apenas o Worker
-make worker
+make worker BASE_DIR= # Diretorio desejado
 
 # Iniciar apenas o Frontend
 make frontend
