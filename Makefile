@@ -1,4 +1,5 @@
-.PHONY: help network clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker
+.PHONY: help network clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker \
+        bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
 
 # =========================
 # Configuração de clone
@@ -6,7 +7,7 @@
 
 # URL dos repositórios
 API_REPO_URL := https://github.com/Caue0Vieira/Api-Occurrence.git
-WORKER_REPO_URL := https://github.com/Caue0Vieira/worker-Occurence.git
+WORKER_REPO_URL := https://github.com/Caue0Vieira/Worker-Occurrence.git
 
 # Diretório base padrão (pode ser sobrescrito: make up BASE_DIR=/caminho)
 BASE_DIR ?= $(CURDIR)
@@ -14,19 +15,30 @@ BASE_DIR ?= $(CURDIR)
 # Nome das pastas (caso clone no BASE_DIR)
 API_PROJECT_NAME ?= Api-Occurrence
 WORKER_PROJECT_NAME ?= Worker-Occurrence
-FRONTEND_PROJECT_NAME ?= Front-Occurrence
 
 # Caminhos finais (podem ser sobrescritos individualmente)
 API_PATH ?= $(BASE_DIR)/$(API_PROJECT_NAME)
 WORKER_PATH ?= $(BASE_DIR)/$(WORKER_PROJECT_NAME)
-FRONTEND_PATH ?= $(BASE_DIR)/$(FRONTEND_PROJECT_NAME)
 
 # Caminhos para docker-compose dentro de cada projeto
 API_DIR := $(API_PATH)/docker
 WORKER_DIR := $(WORKER_PATH)/docker
-FRONTEND_DIR := $(FRONTEND_PATH)
+
+# Caminho para o Frontend
+FRONTEND_DIR := Front-Occurrence
 
 NETWORK_NAME := internal
+
+# =========================
+# Helpers (container id)
+# =========================
+# pega o container do compose pelo project name (api/worker)
+API_CID = $$(docker ps -q --filter "label=com.docker.compose.project=api" | head -n 1)
+WORKER_CID = $$(docker ps -q --filter "label=com.docker.compose.project=worker" | head -n 1)
+
+# comando padrão pra executar bash dentro do container
+API_EXEC = docker exec -it $(API_CID) bash -lc
+WORKER_EXEC = docker exec -it $(WORKER_CID) bash -lc
 
 # =========================
 # Cores para output
@@ -39,24 +51,28 @@ NC := \033[0m
 help: ## Mostra esta mensagem de ajuda
 	@echo "$(GREEN)=== Comandos Disponíveis ===$(NC)"
 	@echo ""
-	@echo "$(YELLOW)make clone BASE_DIR=/caminho$(NC)    - Clona API/Worker (e Frontend se quiser) no diretório escolhido"
-	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)       - Clona (se necessário) e inicia todos os serviços"
-	@echo "$(YELLOW)make network$(NC)                   - Cria a rede Docker 'internal' se não existir"
-	@echo "$(YELLOW)make api$(NC)                        - Inicia apenas a API"
-	@echo "$(YELLOW)make worker$(NC)                    - Inicia apenas o Worker"
-	@echo "$(YELLOW)make frontend$(NC)                  - Inicia apenas o Frontend"
-	@echo "$(YELLOW)make down$(NC)                      - Para todos os serviços Docker"
-	@echo "$(YELLOW)make stop$(NC)                      - Para todos os serviços sem remover containers"
-	@echo "$(YELLOW)make restart$(NC)                   - Reinicia todos os serviços"
-	@echo "$(YELLOW)make clean$(NC)                     - Remove containers, volumes e rede"
-	@echo "$(YELLOW)make logs-api$(NC)                  - Mostra logs da API"
-	@echo "$(YELLOW)make logs-worker$(NC)               - Mostra logs do Worker"
+	@echo "$(YELLOW)make clone BASE_DIR=/caminho$(NC)     - Clona API/Worker no diretório escolhido"
+	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)        - Clona (se necessário) e inicia todos os serviços"
+	@echo "$(YELLOW)make api$(NC)                          - Inicia apenas a API"
+	@echo "$(YELLOW)make worker$(NC)                       - Inicia apenas o Worker"
+	@echo "$(YELLOW)make frontend$(NC)                     - Inicia apenas o Frontend"
+	@echo "$(YELLOW)make setup-api$(NC)                    - .env + composer + key + migrate/seed + swagger (API)"
+	@echo "$(YELLOW)make migrate-api$(NC)                  - php artisan migrate (API)"
+	@echo "$(YELLOW)make seed-api$(NC)                     - php artisan db:seed (API)"
+	@echo "$(YELLOW)make swagger-api$(NC)                  - php artisan l5-swagger:generate (API)"
+	@echo "$(YELLOW)make bash-api$(NC)                     - Abre um bash no container da API"
+	@echo "$(YELLOW)make setup-worker$(NC)                 - Setup do Worker (se for Laravel também)"
+	@echo "$(YELLOW)make migrate-worker$(NC)               - php artisan migrate (Worker)"
+	@echo "$(YELLOW)make seed-worker$(NC)                  - php artisan db:seed (Worker)"
+	@echo "$(YELLOW)make swagger-worker$(NC)               - php artisan l5-swagger:generate (Worker)"
+	@echo "$(YELLOW)make bash-worker$(NC)                  - Abre um bash no container do Worker"
+	@echo "$(YELLOW)make down$(NC)                         - Para todos os serviços Docker"
+	@echo "$(YELLOW)make clean$(NC)                        - Remove containers, volumes e rede"
 	@echo ""
 	@echo "$(GREEN)=== Caminhos atuais ===$(NC)"
 	@echo "BASE_DIR:      $(BASE_DIR)"
 	@echo "API_PATH:      $(API_PATH)"
 	@echo "WORKER_PATH:   $(WORKER_PATH)"
-	@echo "FRONTEND_PATH: $(FRONTEND_PATH)"
 	@echo ""
 
 # =========================
@@ -102,29 +118,22 @@ clone-worker: ## Clona o Worker no caminho escolhido (WORKER_PATH)
 api: network clone-api ## Inicia a API
 	@echo "$(GREEN)Iniciando API...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api up -d
-	@echo "$(GREEN)✓ API iniciada na porta 8089$(NC)"
-	@echo "$(YELLOW)Aguardando API ficar pronta...$(NC)"
-	@sleep 5
+	@echo "$(GREEN)✓ API iniciada$(NC)"
+	@sleep 2
 
 worker: network clone-worker ## Inicia o Worker
 	@echo "$(GREEN)Iniciando Worker...$(NC)"
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
-	@echo "$(GREEN)✓ Worker iniciado na porta 8014$(NC)"
-	@echo "$(YELLOW)Aguardando Worker ficar pronto...$(NC)"
-	@sleep 3
+	@echo "$(GREEN)✓ Worker iniciado$(NC)"
+	@sleep 2
 
-frontend: ## Inicia o Frontend (assume que o Frontend já existe em FRONTEND_PATH)
+frontend: ## Inicia o Frontend
 	@echo "$(GREEN)Iniciando Frontend...$(NC)"
-	@if [ ! -d "$(FRONTEND_DIR)" ]; then \
-		echo "$(RED)✗ Frontend não encontrado em: $(FRONTEND_DIR)$(NC)"; \
-		echo "$(YELLOW)Dica: ajuste FRONTEND_PATH ou clone o Frontend para esse local.$(NC)"; \
-		exit 1; \
-	fi
 	@if [ ! -d "$(FRONTEND_DIR)/node_modules" ]; then \
 		echo "$(YELLOW)Instalando dependências do Frontend...$(NC)"; \
-		cd "$(FRONTEND_DIR)" && npm install; \
+		cd $(FRONTEND_DIR) && npm install; \
 	fi
-	@cd "$(FRONTEND_DIR)" && npm run dev
+	@cd $(FRONTEND_DIR) && npm run dev
 	@echo "$(GREEN)✓ Frontend iniciado$(NC)"
 
 up: network clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
@@ -135,9 +144,45 @@ up: network clone ## Inicia todos os serviços na ordem: API -> Worker -> Fronte
 	@$(MAKE) worker
 	@echo ""
 	@echo "$(GREEN)=== Serviços Docker iniciados ===$(NC)"
-	@echo "$(YELLOW)Iniciando Frontend (pressione Ctrl+C para parar)...$(NC)"
+	@echo "$(YELLOW)Iniciando Frontend (Ctrl+C para parar)...$(NC)"
 	@echo ""
 	@$(MAKE) frontend
+
+# =========================
+# Setup / Artisan (API)
+# =========================
+bash-api: api ## Abre bash no container da API
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
+	@docker exec -it $(API_CID) bash
+
+setup-api: api ## .env + composer + key + migrate/seed + swagger
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
+	@echo "$(GREEN)Rodando setup da API...$(NC)"
+	@$(API_EXEC) "cp -n .env.example .env || true"
+	@$(API_EXEC) "composer install --no-interaction --prefer-dist"
+	@$(API_EXEC) "php artisan key:generate --force"
+	@$(API_EXEC) "php artisan migrate --seed --force"
+	@$(API_EXEC) "php artisan l5-swagger:generate || true"
+	@echo "$(GREEN)✓ Setup da API concluído$(NC)"
+
+migrate-api: api
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
+	@$(API_EXEC) "php artisan migrate --force"
+
+seed-api: api
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
+	@$(API_EXEC) "php artisan db:seed --force"
+
+swagger-api: api
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
+	@$(API_EXEC) "php artisan l5-swagger:generate"
+
+# =========================
+# Setup / Artisan (Worker)
+# =========================
+bash-worker: worker ## Abre bash no container do Worker
+	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
+	@docker exec -it $(WORKER_CID) bash
 
 # =========================
 # Down / Stop / Clean

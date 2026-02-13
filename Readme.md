@@ -19,7 +19,7 @@ O projeto possui um `Makefile` na raiz que automatiza todo o processo de inicial
 #### Iniciar todos os serviços
 
 ```bash
-make up
+make up BASE_DIR= # Diretorio desejado
 ```
 
 Este comando irá:
@@ -34,29 +34,63 @@ Este comando irá:
 # Ver todos os comandos disponíveis
 make help
 
-# Iniciar todos os sistemas
-make up BASE_DIR= # Diretorio desejado
-
 # Criar apenas a rede Docker
 make network
 
+# =========================
+# Subir serviços
+# =========================
+
 # Iniciar apenas a API
-make api BASE_DIR= # Diretorio desejado
+make api BASE_DIR=/diretorio/desejado
 
 # Iniciar apenas o Worker
-make worker BASE_DIR= # Diretorio desejado
+make worker BASE_DIR=/diretorio/desejado
 
 # Iniciar apenas o Frontend
 make frontend
 
+# Iniciar tudo (API + Worker + Frontend)
+make up BASE_DIR=/diretorio/desejado
+
+# =========================
+# Setup Laravel (API)
+# =========================
+
+# Setup completo da API (.env + composer + key + migrate + seed + swagger)
+make setup-api
+
+# Rodar migrations da API
+make migrate-api
+
+# Rodar seeds da API
+make seed-api
+
+# Gerar documentação Swagger da API
+make swagger-api
+
+# Entrar no container da API
+make bash-api
+
+# =========================
+# Setup Worker (se Laravel)
+# =========================
+
+# Entrar no container do Worker
+make bash-worker
+
+# =========================
+# Controle dos containers
+# =========================
+
 # Parar todos os serviços Docker
-make down
+make down BASE_DIR=/diretorio/desejado
 
 # Parar serviços sem remover containers
-make stop
+make stop BASE_DIR=/diretorio/desejado
 
 # Reiniciar todos os serviços
-make restart
+make restart BASE_DIR=/diretorio/desejado
 
 # Ver logs da API
 make logs-api
@@ -66,13 +100,6 @@ make logs-worker
 
 # Limpar tudo (containers, volumes e rede)
 make clean
-```
-
-### Parar os Serviços
-
-```bash
-make down    # Para e remove containers
-make stop    # Para sem remover containers
 ```
 
 ### Estrutura de Portas
