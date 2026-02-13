@@ -147,8 +147,6 @@ setup-api: ## .env + composer + key + migrate/seed + swagger
 	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@echo "$(GREEN)Rodando setup da API...$(NC)"
 	@$(API_EXEC) "cp -n .env.example .env || true"
-	@$(API_EXEC) "composer install --no-interaction --prefer-dist"
-	@$(API_EXEC) "php artisan key:generate --force"
 	@$(API_EXEC) "php artisan migrate:fresh --seed --force"
 	@$(API_EXEC) "php artisan l5-swagger:generate || true"
 	@echo "$(GREEN)✓ Setup da API concluído$(NC)"
