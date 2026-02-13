@@ -6,15 +6,8 @@ export type OccurrenceStatus =
     | 'resolved'
     | 'cancelled';
 
-export type OccurrenceType =
-    | 'incendio_urbano'
-    | 'incendio_florestal'
-    | 'resgate_veicular'
-    | 'atendimento_pre_hospitalar'
-    | 'salvamento_aquatico'
-    | 'falso_chamado'
-    | 'vazamento_gas'
-    | 'queda_arvore';
+// Tipo de código de ocorrência (agora é string genérico, valores vêm da API)
+export type OccurrenceType = string;
 
 export interface Occurrence {
     id: string;

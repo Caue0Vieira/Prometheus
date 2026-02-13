@@ -83,3 +83,20 @@ export const updateDispatchStatus = async (
   return response.data;
 };
 
+/**
+ * Busca todos os tipos de ocorrência disponíveis
+ */
+export interface OccurrenceType {
+  code: string;
+  name: string;
+}
+
+export interface OccurrenceTypesResponse {
+  data: OccurrenceType[];
+}
+
+export const getOccurrenceTypes = async (): Promise<OccurrenceTypesResponse> => {
+  const response = await apiClient.get<OccurrenceTypesResponse>('/occurrences/types');
+  return response.data;
+};
+
