@@ -11,6 +11,7 @@ use Application\UseCases\ResolveOccurrence\ResolveOccurrenceCommand;
 use Application\UseCases\ResolveOccurrence\ResolveOccurrenceHandler;
 use Application\UseCases\StartOccurrence\StartOccurrenceCommand;
 use Application\UseCases\StartOccurrence\StartOccurrenceHandler;
+use Domain\Occurrence\Collections\OccurrenceStatusCollection;
 use Domain\Occurrence\Collections\OccurrenceTypeCollection;
 use Domain\Occurrence\Entities\Occurrence;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
@@ -100,5 +101,14 @@ readonly class OccurrenceService
     public function findOccurrenceTypes(): OccurrenceTypeCollection
     {
         return $this->occurrenceRepository->findOccurrenceTypes();
+    }
+
+    /**
+     * Retorna todos os status de ocorrência disponíveis
+     * @return OccurrenceStatusCollection
+     */
+    public function findOccurrenceStatuses(): OccurrenceStatusCollection
+    {
+        return $this->occurrenceRepository->findOccurrenceStatuses();
     }
 }

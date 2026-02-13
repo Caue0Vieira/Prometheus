@@ -100,3 +100,20 @@ export const getOccurrenceTypes = async (): Promise<OccurrenceTypesResponse> => 
   return response.data;
 };
 
+/**
+ * Busca todos os status de ocorrência disponíveis
+ */
+export interface OccurrenceStatus {
+  code: string;
+  name: string;
+}
+
+export interface OccurrenceStatusesResponse {
+  data: OccurrenceStatus[];
+}
+
+export const getOccurrenceStatuses = async (): Promise<OccurrenceStatusesResponse> => {
+  const response = await apiClient.get<OccurrenceStatusesResponse>('/occurrences/status');
+  return response.data;
+};
+

@@ -3,15 +3,7 @@
  */
 
 import { Button, Select, LoadingSpinner } from '../common';
-import { useOccurrenceTypes } from '../../hooks';
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos os status' },
-  { value: 'reported', label: 'Reportada' },
-  { value: 'in_progress', label: 'Em Atendimento' },
-  { value: 'resolved', label: 'Resolvida' },
-  { value: 'cancelled', label: 'Cancelada' },
-];
+import { useOccurrenceTypes, useOccurrenceStatuses } from '../../hooks';
 
 interface OccurrencesFiltersProps {
   statusFilter: string;
@@ -29,6 +21,15 @@ export const OccurrencesFilters = ({
   onClear,
 }: OccurrencesFiltersProps) => {
   const { data: typesData, isLoading: isLoadingTypes } = useOccurrenceTypes();
+  const { data: statusesData, isLoading: isLoadingStatuses } = useOccurrenceStatuses();
+
+  const STATUS_OPTIONS = [
+    { value: '', label: 'Todos os status' },
+    ...(statusesData?.data.map((status) => ({
+      value: status.code,
+      label: status.name,
+    })) || []),
+  ];
 
   // Monta as opções de tipos a partir da API
   const TYPE_OPTIONS = [
@@ -42,12 +43,18 @@ export const OccurrencesFilters = ({
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Select
-          label="Status"
-          options={STATUS_OPTIONS}
-          value={statusFilter}
-          onChange={(e) => onStatusChange(e.target.value)}
-        />
+        {isLoadingStatuses ? (
+          <div className="flex items-center justify-center h-10">
+            <LoadingSpinner size="sm" />
+          </div>
+        ) : (
+          <Select
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={(e) => onStatusChange(e.target.value)}
+          />
+        )}
 
         {isLoadingTypes ? (
           <div className="flex items-center justify-center h-10">

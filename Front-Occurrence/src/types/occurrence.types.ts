@@ -1,12 +1,7 @@
 import type {Dispatch} from './dispatch.types';
 
-export type OccurrenceStatus =
-    | 'reported'
-    | 'in_progress'
-    | 'resolved'
-    | 'cancelled';
+export type OccurrenceStatus = string;
 
-// Tipo de código de ocorrência (agora é string genérico, valores vêm da API)
 export type OccurrenceType = string;
 
 export interface Occurrence {

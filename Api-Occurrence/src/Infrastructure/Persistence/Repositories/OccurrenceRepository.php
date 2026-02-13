@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Infrastructure\Persistence\Repositories;
 
+use Domain\Occurrence\Collections\OccurrenceStatusCollection;
 use Domain\Occurrence\Collections\OccurrenceTypeCollection;
 use Domain\Occurrence\Entities\Occurrence;
+use Domain\Occurrence\Entities\OccurrenceStatus;
 use Domain\Occurrence\Entities\OccurrenceType;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
 use Domain\Shared\ValueObjects\Uuid;
@@ -108,15 +110,31 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
 
     public function findOccurrenceTypes(): OccurrenceTypeCollection
     {
-        $types = DB::table('occurrence_types')
+        $rows = DB::table('occurrence_types')
             ->select('code', 'name')
-            ->orderBy('name')
-            ->get()
-            ->map(
-                fn ($row) => OccurrenceType::fromArray((array) $row)
-            )
-            ->all();
+            ->orderBy('name', 'asc')
+            ->get();
+
+        $types = array_map(
+            static fn($row) => OccurrenceType::fromArray([...(array)$row]),
+            $rows->all()
+        );
 
         return new OccurrenceTypeCollection($types);
+    }
+
+    public function findOccurrenceStatuses(): OccurrenceStatusCollection
+    {
+        $rows = DB::table('occurrence_statuses')
+            ->select('code', 'name')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        $status = array_map(
+            static fn($row) => OccurrenceStatus::fromArray([...(array)$row]),
+            $rows->all()
+        );
+
+        return new OccurrenceStatusCollection($status);
     }
 }

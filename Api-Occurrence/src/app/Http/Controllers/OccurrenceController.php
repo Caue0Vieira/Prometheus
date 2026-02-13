@@ -73,4 +73,11 @@ class OccurrenceController extends Controller
 
         return response()->json(['data' => $types]);
     }
+
+    public function findOccurrenceStatuses(): JsonResponse
+    {
+        $statuses = $this->occurrenceService->findOccurrenceStatuses();
+
+        return response()->json(['data' => $statuses]);
+    }
 }
