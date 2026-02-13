@@ -1,4 +1,4 @@
-export type CommandStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'accepted';
+export type CommandStatus = 'pending' | 'processed' | 'failed' | 'accepted';
 
 export interface CommandResponse {
     commandId: string;

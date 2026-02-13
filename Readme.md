@@ -143,7 +143,7 @@ A integração externa foi desenhada para ser segura, resiliente e escalável. O
 4. **API** envia comando para fila RabbitMQ
 5. **API** retorna `202 Accepted` com `command_id`
 6. **Worker** processa comando assincronamente
-7. **Worker** atualiza status no `command_inbox` (`success` ou `failed`)
+7. **Worker** atualiza status no `command_inbox` (`processed` ou `failed`)
 
 ---
 

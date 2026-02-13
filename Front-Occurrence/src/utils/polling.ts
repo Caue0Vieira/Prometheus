@@ -28,7 +28,7 @@ export const pollCommandStatus = async (
         try {
             const status = await getCommandStatus(commandId);
 
-            if (status.status === 'pending' || status.status === 'processing' || status.status === 'accepted') {
+            if (status.status === 'pending' || status.status === 'accepted') {
                 if (onPending) {
                     onPending(attempt + 1);
                 }
@@ -36,7 +36,7 @@ export const pollCommandStatus = async (
                 continue;
             }
 
-            if (status.status === 'completed') {
+            if (status.status === 'processed') {
                 if (onSuccess) {
                     onSuccess(status.result);
                 }
