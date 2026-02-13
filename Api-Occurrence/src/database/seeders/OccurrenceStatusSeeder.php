@@ -41,7 +41,7 @@ class OccurrenceStatusSeeder extends Seeder
         ];
 
         foreach ($statuses as $status) {
-            DB::table('occurrence_statuses')->insert([
+            DB::table('occurrence_status')->insert([
                 'id' => $status['id'],
                 'code' => $status['code'],
                 'name' => $status['name'],

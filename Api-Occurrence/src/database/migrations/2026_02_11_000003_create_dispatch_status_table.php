@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('occurrence_statuses', function (Blueprint $table) {
+        Schema::create('dispatch_status', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('code', 50)->unique();
             $table->string('name', 100);
-            $table->boolean('is_final')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('occurrence_statuses');
+        Schema::dropIfExists('dispatch_status');
     }
 };
 

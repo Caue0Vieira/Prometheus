@@ -41,7 +41,7 @@ class DispatchStatusSeeder extends Seeder
         ];
 
         foreach ($statuses as $status) {
-            DB::table('dispatch_statuses')->insert([
+            DB::table('dispatch_status')->insert([
                 'id' => $status['id'],
                 'code' => $status['code'],
                 'name' => $status['name'],

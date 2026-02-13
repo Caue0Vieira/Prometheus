@@ -62,7 +62,7 @@ class DispatchRepository implements DispatchRepositoryInterface
                 'ds.name as status_name',
                 'ds.is_active as status_is_active'
             )
-            ->leftJoin('dispatch_statuses as ds', 'd.status_code', '=', 'ds.code')
+            ->leftJoin('dispatch_status as ds', 'd.status_code', '=', 'ds.code')
             ->where('d.id', $id->toString())
             ->first();
 

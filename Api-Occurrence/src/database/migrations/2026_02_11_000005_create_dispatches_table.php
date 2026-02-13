@@ -26,7 +26,7 @@ return new class extends Migration
 
             $table->foreign('status_code')
                 ->references('code')
-                ->on('dispatch_statuses')
+                ->on('dispatch_status')
                 ->onDelete('restrict');
 
             // Indexes

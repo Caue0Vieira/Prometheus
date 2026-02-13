@@ -18,10 +18,10 @@ class DispatchRepository implements DispatchRepositoryInterface
         $row = DB::table('dispatches')
             ->select(
                 'dispatches.*',
-                'dispatch_statuses.name as status_name',
-                'dispatch_statuses.is_active as status_is_active'
+                'dispatch_status.name as status_name',
+                'dispatch_status.is_active as status_is_active'
             )
-            ->leftJoin('dispatch_statuses', 'dispatches.status_code', '=', 'dispatch_statuses.code')
+            ->leftJoin('dispatch_status', 'dispatches.status_code', '=', 'dispatch_status.code')
             ->where('dispatches.id', $id->toString())
             ->first();
 
@@ -33,10 +33,10 @@ class DispatchRepository implements DispatchRepositoryInterface
         $rows = DB::table('dispatches')
             ->select(
                 'dispatches.*',
-                'dispatch_statuses.name as status_name',
-                'dispatch_statuses.is_active as status_is_active'
+                'dispatch_status.name as status_name',
+                'dispatch_status.is_active as status_is_active'
             )
-            ->leftJoin('dispatch_statuses', 'dispatches.status_code', '=', 'dispatch_statuses.code')
+            ->leftJoin('dispatch_status', 'dispatches.status_code', '=', 'dispatch_status.code')
             ->where('dispatches.occurrence_id', $occurrenceId->toString())
             ->orderBy('dispatches.created_at', 'desc')
             ->get();
@@ -53,10 +53,10 @@ class DispatchRepository implements DispatchRepositoryInterface
         $rows = DB::table('dispatches')
             ->select(
                 'dispatches.*',
-                'dispatch_statuses.name as status_name',
-                'dispatch_statuses.is_active as status_is_active'
+                'dispatch_status.name as status_name',
+                'dispatch_status.is_active as status_is_active'
             )
-            ->leftJoin('dispatch_statuses', 'dispatches.status_code', '=', 'dispatch_statuses.code')
+            ->leftJoin('dispatch_status', 'dispatches.status_code', '=', 'dispatch_status.code')
             ->where('dispatches.occurrence_id', $occurrenceId->toString())
             ->where('dispatches.status_code', '!=', 'closed')
             ->orderBy('dispatches.created_at', 'desc')

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('code', 50)->unique();
             $table->string('name', 100);
-            $table->string('category', 50)->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();
         });

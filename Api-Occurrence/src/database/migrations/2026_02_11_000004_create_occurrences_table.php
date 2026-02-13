@@ -28,7 +28,7 @@ return new class extends Migration
 
             $table->foreign('status_code')
                 ->references('code')
-                ->on('occurrence_statuses')
+                ->on('occurrence_status')
                 ->onDelete('restrict');
 
             // Indexes

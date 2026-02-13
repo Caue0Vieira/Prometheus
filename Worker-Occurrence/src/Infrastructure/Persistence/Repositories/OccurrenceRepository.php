@@ -71,7 +71,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'os.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types as ot', 'o.type_code', '=', 'ot.code')
-            ->leftJoin('occurrence_statuses as os', 'o.status_code', '=', 'os.code')
+            ->leftJoin('occurrence_status as os', 'o.status_code', '=', 'os.code')
             ->where('o.id', $id->toString())
             ->first();
 
@@ -83,8 +83,6 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
      */
     public function findByIdForUpdate(Uuid $id): ?Occurrence
     {
-        // PostgreSQL não permite FOR UPDATE com LEFT JOIN
-        // Primeiro fazemos o lock na tabela principal (sem JOINs)
         $locked = DB::table('occurrences')
             ->where('id', $id->toString())
             ->lockForUpdate()
@@ -94,7 +92,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
             return null;
         }
 
-        // Depois buscamos os dados completos com JOINs
+        // Buscamos os dados completos com JOINs
         $row = DB::table('occurrences as o')
             ->select(
                 'o.*',
@@ -104,7 +102,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'os.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types as ot', 'o.type_code', '=', 'ot.code')
-            ->leftJoin('occurrence_statuses as os', 'o.status_code', '=', 'os.code')
+            ->leftJoin('occurrence_status as os', 'o.status_code', '=', 'os.code')
             ->where('o.id', $id->toString())
             ->first();
 
@@ -125,7 +123,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'os.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types as ot', 'o.type_code', '=', 'ot.code')
-            ->leftJoin('occurrence_statuses as os', 'o.status_code', '=', 'os.code')
+            ->leftJoin('occurrence_status as os', 'o.status_code', '=', 'os.code')
             ->where('o.external_id', $externalId)
             ->first();
 

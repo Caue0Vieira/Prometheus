@@ -23,11 +23,11 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'occurrences.*',
                 'occurrence_types.name as type_name',
                 'occurrence_types.category as type_category',
-                'occurrence_statuses.name as status_name',
-                'occurrence_statuses.is_final as status_is_final'
+                'occurrence_status.name as status_name',
+                'occurrence_status.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types', 'occurrences.type_code', '=', 'occurrence_types.code')
-            ->leftJoin('occurrence_statuses', 'occurrences.status_code', '=', 'occurrence_statuses.code')
+            ->leftJoin('occurrence_status', 'occurrences.status_code', '=', 'occurrence_status.code')
             ->where('occurrences.id', $id->toString())
             ->first();
 
@@ -45,11 +45,11 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
                 'occurrences.*',
                 'occurrence_types.name as type_name',
                 'occurrence_types.category as type_category',
-                'occurrence_statuses.name as status_name',
-                'occurrence_statuses.is_final as status_is_final'
+                'occurrence_status.name as status_name',
+                'occurrence_status.is_final as status_is_final'
             )
             ->leftJoin('occurrence_types', 'occurrences.type_code', '=', 'occurrence_types.code')
-            ->leftJoin('occurrence_statuses', 'occurrences.status_code', '=', 'occurrence_statuses.code');
+            ->leftJoin('occurrence_status', 'occurrences.status_code', '=', 'occurrence_status.code');
 
         if ($statusCode !== null) {
             $query->where('occurrences.status_code', $statusCode);
@@ -94,10 +94,10 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
         $dispatchRows = DB::table('dispatches')
             ->select(
                 'dispatches.*',
-                'dispatch_statuses.name as status_name',
-                'dispatch_statuses.is_active as status_is_active'
+                'dispatch_status.name as status_name',
+                'dispatch_status.is_active as status_is_active'
             )
-            ->leftJoin('dispatch_statuses', 'dispatches.status_code', '=', 'dispatch_statuses.code')
+            ->leftJoin('dispatch_status', 'dispatches.status_code', '=', 'dispatch_status.code')
             ->where('dispatches.occurrence_id', $id->toString())
             ->orderBy('dispatches.created_at', 'desc')
             ->get();
@@ -125,7 +125,7 @@ class OccurrenceRepository implements OccurrenceRepositoryInterface
 
     public function findOccurrenceStatuses(): OccurrenceStatusCollection
     {
-        $rows = DB::table('occurrence_statuses')
+        $rows = DB::table('occurrence_status')
             ->select('code', 'name')
             ->orderBy('name', 'asc')
             ->get();

@@ -87,7 +87,7 @@ trait CommandInboxTestHelpers
     }
 
     /**
-     * Configura tabelas relacionadas (occurrence_types e occurrence_statuses)
+     * Configura tabelas relacionadas (occurrence_types e occurrence_status)
      */
     protected function setupOccurrenceTables(string $typeCode = 'incendio_urbano', string $statusCode = 'reported'): void
     {
@@ -103,8 +103,8 @@ trait CommandInboxTestHelpers
             ]);
         }
 
-        if (!DB::table('occurrence_statuses')->where('code', $statusCode)->exists()) {
-            DB::table('occurrence_statuses')->insert([
+        if (!DB::table('occurrence_status')->where('code', $statusCode)->exists()) {
+            DB::table('occurrence_status')->insert([
                 'id' => Uuid::generate()->toString(),
                 'code' => $statusCode,
                 'name' => ucfirst($statusCode),

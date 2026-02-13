@@ -42,8 +42,8 @@ trait CreatesIntegrationSchema
             });
         }
 
-        if (!Schema::hasTable('occurrence_statuses')) {
-            Schema::create('occurrence_statuses', function (Blueprint $table): void {
+        if (!Schema::hasTable('occurrence_status')) {
+            Schema::create('occurrence_status', function (Blueprint $table): void {
                 $table->string('code', 50)->primary();
                 $table->string('name', 100);
                 $table->boolean('is_final')->default(false);
@@ -64,8 +64,8 @@ trait CreatesIntegrationSchema
             });
         }
 
-        if (!Schema::hasTable('dispatch_statuses')) {
-            Schema::create('dispatch_statuses', function (Blueprint $table): void {
+        if (!Schema::hasTable('dispatch_status')) {
+            Schema::create('dispatch_status', function (Blueprint $table): void {
                 $table->string('code', 50)->primary();
                 $table->string('name', 100);
                 $table->boolean('is_active')->default(true);
@@ -132,8 +132,8 @@ trait CreatesIntegrationSchema
         ];
 
         foreach ($occurrenceStatuses as $status) {
-            if (!DB::table('occurrence_statuses')->where('code', $status['code'])->exists()) {
-                DB::table('occurrence_statuses')->insert([
+            if (!DB::table('occurrence_status')->where('code', $status['code'])->exists()) {
+                DB::table('occurrence_status')->insert([
                     ...$status,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -149,8 +149,8 @@ trait CreatesIntegrationSchema
         ];
 
         foreach ($dispatchStatuses as $status) {
-            if (!DB::table('dispatch_statuses')->where('code', $status['code'])->exists()) {
-                DB::table('dispatch_statuses')->insert([
+            if (!DB::table('dispatch_status')->where('code', $status['code'])->exists()) {
+                DB::table('dispatch_status')->insert([
                     ...$status,
                     'created_at' => now(),
                     'updated_at' => now(),
