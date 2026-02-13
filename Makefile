@@ -174,7 +174,6 @@ setup-worker:
 	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
 	@echo "$(GREEN)Rodando setup do Worker...$(NC)"
 	@$(WORKER_EXEC) "cp -n .env.example .env || true"
-	@$(WORKER_EXEC) "composer install --no-interaction --prefer-dist || true"
 	@echo "$(GREEN)✓ Setup do Worker concluído$(NC)"
 
 # =========================
