@@ -7,6 +7,7 @@ export { Input } from './Input';
 export { Select } from './Select';
 export { StatusBadge } from './StatusBadge';
 export { Modal } from './Modal';
+export { ConfirmModal } from './ConfirmModal';
 export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorAlert } from './ErrorAlert';
 export { ErrorBoundary } from './ErrorBoundary';
