@@ -27,6 +27,7 @@ use Infrastructure\Persistence\Repositories\CommandInboxWriteRepository;
 use Infrastructure\Persistence\Repositories\DispatchRepository;
 use Infrastructure\Persistence\Repositories\OccurrenceRepository;
 use Infrastructure\Cache\OccurrenceListRedisCache;
+use L5Swagger\L5SwaggerServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
 {
@@ -74,7 +75,6 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->singleton(CloseDispatchHandler::class);
         $this->app->singleton(UpdateDispatchStatusHandler::class);
         $this->app->singleton(ListOccurrencesHandler::class);
-
     }
 
     /**
