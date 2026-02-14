@@ -28,7 +28,7 @@ export const pollCommandStatus = async (
         try {
             const status = await getCommandStatus(commandId);
 
-            if (status.status === 'pending') {
+            if (status.status === 'pending' || status.status === 'accepted') {
                 if (onPending) {
                     onPending(attempt + 1);
                 }
@@ -45,7 +45,7 @@ export const pollCommandStatus = async (
 
             if (status.status === 'failed') {
                 if (onError) {
-                    onError(status.errorMessage);
+                    onError(status.error || null);
                 }
                 return status;
             }
@@ -65,10 +65,10 @@ export const pollCommandStatus = async (
 
     // Retorna um objeto indicando timeout
     return {
-        commandId,
+        commandId: commandId,
         status: 'pending' as CommandStatus,
         result: null,
+        error: 'Timeout: O comando ainda está sendo processado. Tente novamente em alguns segundos.',
         errorMessage: 'Timeout: O comando ainda está sendo processado. Tente novamente em alguns segundos.',
-        processedAt: null,
     };
 };

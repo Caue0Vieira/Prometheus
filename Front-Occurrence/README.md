@@ -1,45 +1,24 @@
-# Frontend - Sistema de Ocorrências
+# 🖥️ Frontend - Sistema de Ocorrências
 
-Interface administrativa React para gerenciamento de ocorrências do Corpo de Bombeiros.
+Interface administrativa React para gerenciamento de ocorrências do Corpo de Bombeiros. Desenvolvida com **React**, **TypeScript** e **Vite**.
 
-## 🚀 Tecnologias
+## 🚀 Como Rodar
 
-- **React 18** - Biblioteca UI
-- **TypeScript** - Tipagem estática
-- **Vite** - Build tool e dev server
-- **React Router** - Roteamento
-- **React Query** - Gerenciamento de estado e cache
-- **Axios** - Cliente HTTP
-- **Tailwind CSS** - Estilização
-- **date-fns** - Formatação de datas
-
-## 📋 Pré-requisitos
-
-- Node.js 18+ 
+### Pré-requisitos
+- Node.js 18+ instalado
 - npm ou yarn
 
-## 🛠️ Instalação
-
-1. Instale as dependências:
+### Instalação e Execução
 
 ```bash
+# Instalar dependências
 npm install
-```
 
-2. Configure as variáveis de ambiente:
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Edite o .env com as configurações da API
 
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-VITE_API_URL=http://localhost:8089/api
-VITE_API_KEY=dev-key-12345
-```
-
-## 🏃 Executando
-
-### Desenvolvimento
-
-```bash
+# Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
@@ -49,92 +28,53 @@ A aplicação estará disponível em `http://localhost:3000`
 
 ```bash
 npm run build
-```
-
-### Preview do Build
-
-```bash
 npm run preview
 ```
 
-## 📁 Estrutura do Projeto
+## ⚙️ Configuração
 
-```
-src/
-├── api/              # Cliente HTTP e serviços de API
-├── components/       # Componentes React
-│   └── common/       # Componentes reutilizáveis
-├── hooks/            # Custom hooks (React Query)
-├── pages/            # Páginas da aplicação
-├── types/            # Definições TypeScript
-├── utils/            # Funções utilitárias
-├── App.tsx           # Componente principal
-└── main.tsx          # Ponto de entrada
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+VITE_API_URL=http://localhost:8089/api
+VITE_API_KEY=sua-api-key-aqui
 ```
 
 ## 🎯 Funcionalidades
 
-### Lista de Ocorrências
-- Visualização em tabela
-- Filtros por status e tipo
-- Paginação
-- Atualização automática (30s)
+### Dashboard de Ocorrências
+- **Lista de ocorrências** com filtros por status e tipo
+- **Paginação** e atualização automática
+- **Detalhamento** completo de cada ocorrência
 
-### Detalhe da Ocorrência
-- Informações completas
-- Histórico de despachos
-- Ações:
-  - Iniciar atendimento
-  - Encerrar ocorrência
-  - Criar despacho
-- Atualização automática (15s)
+### Gerenciamento
+- **Iniciar atendimento** de ocorrências
+- **Encerrar ocorrências** resolvidas
+- **Criar e gerenciar despachos**
+- **Visualizar histórico** de ações
 
-## 🔧 Configuração
+### Interface
+- Atualização automática de dados
+- Feedback visual de operações assíncronas
+- Interface responsiva e moderna
 
-### Variáveis de Ambiente
+## 🔄 Como Funciona
 
-- `VITE_API_URL` - URL base da API (padrão: `http://localhost:8089/api`)
-- `VITE_API_KEY` - Chave de autenticação da API (padrão: `dev-key-12345`)
+O frontend consome a API REST e exibe as informações de forma reativa:
 
-## 📝 Scripts Disponíveis
+1. **Consulta dados** → Busca ocorrências e despachos da API
+2. **Exibe informações** → Renderiza dados em tempo real
+3. **Envia comandos** → Dispara ações assíncronas via API
+4. **Monitora status** → Acompanha processamento de comandos
+5. **Atualiza interface** → Refresh automático quando necessário
 
-- `npm run dev` - Inicia servidor de desenvolvimento
-- `npm run build` - Cria build de produção
-- `npm run preview` - Preview do build de produção
-- `npm run lint` - Executa linter
+### Tecnologias Utilizadas
 
-## 🎨 Componentes Principais
+- **React 18** - Biblioteca UI
+- **TypeScript** - Tipagem estática
+- **Vite** - Build tool
+- **React Query** - Gerenciamento de estado e cache
+- **Tailwind CSS** - Estilização
+- **React Router** - Navegação
 
-- **Button** - Botões com variantes e estados de loading
-- **Input** - Inputs de formulário com validação
-- **Select** - Dropdowns reutilizáveis
-- **StatusBadge** - Badges de status coloridos
-- **Modal** - Modais genéricos
-- **LoadingSpinner** - Indicadores de carregamento
-- **ErrorAlert** - Alertas de erro
-
-## 🔄 Integração com API
-
-O frontend consome os seguintes endpoints:
-
-- `GET /api/occurrences` - Lista ocorrências
-- `GET /api/occurrences/:id` - Detalhes da ocorrência
-- `POST /api/occurrences/:id/start` - Iniciar atendimento
-- `POST /api/occurrences/:id/resolve` - Encerrar ocorrência
-- `POST /api/occurrences/:id/dispatches` - Criar despacho
-
-Todas as requisições incluem automaticamente:
-- Header `X-API-Key` para autenticação
-- Header `Idempotency-Key` para requisições POST/PUT/PATCH
-
-## 🧹 Clean Code
-
-O projeto segue princípios de clean code:
-
-- Componentes pequenos e focados
-- Separação de responsabilidades
-- Custom hooks para lógica reutilizável
-- TypeScript para type safety
-- Tratamento consistente de erros
-- Código documentado quando necessário
-
+---

@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ErrorBoundary} from './components/common/ErrorBoundary';
+import {ErrorBoundary} from './components/common';
+import {ToastProvider} from './contexts/ToastContext';
 import App from './App';
 import './index.css';
 
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
-                <App/>
+                <ToastProvider>
+                    <App/>
+                </ToastProvider>
             </QueryClientProvider>
         </ErrorBoundary>
     </React.StrictMode>
