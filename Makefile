@@ -1,5 +1,5 @@
-.PHONY: help clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker \
-        bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
+.PHONY: help clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker logs-frontend \
+       bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
 
 # =========================
 # Configuração de clone
@@ -26,6 +26,7 @@ WORKER_DIR := $(WORKER_PATH)/docker
 
 # Caminho para o Frontend
 FRONTEND_DIR := Front-Occurrence
+FRONTEND_DOCKER_DIR := $(FRONTEND_DIR)/docker
 
 # =========================
 # Helpers (container id)
@@ -53,7 +54,7 @@ help: ## Mostra esta mensagem de ajuda
 	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)        - Clona (se necessário) e inicia todos os serviços"
 	@echo "$(YELLOW)make api$(NC)                          - Inicia apenas a API"
 	@echo "$(YELLOW)make worker$(NC)                       - Inicia apenas o Worker"
-	@echo "$(YELLOW)make frontend$(NC)                     - Inicia apenas o Frontend"
+	@echo "$(YELLOW)make frontend$(NC)                     - Inicia apenas o Frontend (Docker)"
 	@echo "$(YELLOW)make setup-api$(NC)                    - .env + composer + key + migrate/seed + swagger (API)"
 	@echo "$(YELLOW)make migrate-api$(NC)                  - php artisan migrate (API)"
 	@echo "$(YELLOW)make seed-api$(NC)                     - php artisan db:seed (API)"
@@ -61,6 +62,7 @@ help: ## Mostra esta mensagem de ajuda
 	@echo "$(YELLOW)make bash-api$(NC)                     - Abre um bash no container da API"
 	@echo "$(YELLOW)make setup-worker$(NC)                 - Setup do Worker (se for Laravel também)"
 	@echo "$(YELLOW)make bash-worker$(NC)                  - Abre um bash no container do Worker"
+	@echo "$(YELLOW)make logs-frontend$(NC)                - Mostra logs do Frontend"
 	@echo "$(YELLOW)make down$(NC)                         - Para todos os serviços Docker"
 	@echo "$(YELLOW)make clean$(NC)                        - Remove containers, volumes e rede"
 	@echo ""
@@ -117,12 +119,9 @@ worker: clone-worker ## Inicia o Worker
 
 frontend: ## Inicia o Frontend
 	@echo "$(GREEN)Iniciando Frontend...$(NC)"
-	@if [ ! -d "$(FRONTEND_DIR)/node_modules" ]; then \
-		echo "$(YELLOW)Instalando dependências do Frontend...$(NC)"; \
-		cd $(FRONTEND_DIR) && npm install; \
-	fi
-	@cd $(FRONTEND_DIR) && npm run dev
-	@echo "$(GREEN)✓ Frontend iniciado$(NC)"
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend up -d --build
+	@echo "$(GREEN)✓ Frontend iniciado em http://localhost:5173$(NC)"
+	@echo "$(YELLOW)Use 'make logs-frontend' para acompanhar os logs$(NC)"
 
 up: clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
 	@echo "$(GREEN)=== Iniciando todos os serviços ===$(NC)"
@@ -132,7 +131,7 @@ up: clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
 	@$(MAKE) worker
 	@echo ""
 	@echo "$(GREEN)=== Serviços Docker iniciados ===$(NC)"
-	@echo "$(YELLOW)Iniciando Frontend (Ctrl+C para parar)...$(NC)"
+	@echo "$(YELLOW)Iniciando Frontend...$(NC)"
 	@echo ""
 	@$(MAKE) frontend
 
@@ -183,12 +182,14 @@ down: ## Para todos os serviços Docker
 	@echo "$(YELLOW)Parando serviços Docker...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api down 2>/dev/null || true
 	@cd "$(WORKER_DIR)" && docker-compose -p worker down 2>/dev/null || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down 2>/dev/null || true
 	@echo "$(GREEN)✓ Todos os serviços Docker foram parados$(NC)"
 
 stop: ## Para todos os serviços sem remover containers
 	@echo "$(YELLOW)Parando serviços Docker (sem remover containers)...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api stop 2>/dev/null || true
 	@cd "$(WORKER_DIR)" && docker-compose -p worker stop 2>/dev/null || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend stop 2>/dev/null || true
 	@echo "$(GREEN)✓ Serviços Docker parados$(NC)"
 
 restart: stop up ## Reinicia todos os serviços
@@ -197,6 +198,7 @@ clean: down ## Remove containers, volumes e rede
 	@echo "$(RED)Removendo containers, volumes e rede...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api down -v 2>/dev/null || true
 	@cd "$(WORKER_DIR)" && docker-compose -p worker down -v 2>/dev/null || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down -v 2>/dev/null || true
 	@echo "$(GREEN)✓ Limpeza concluída$(NC)"
 
 logs-api: ## Mostra logs da API
@@ -204,3 +206,6 @@ logs-api: ## Mostra logs da API
 
 logs-worker: ## Mostra logs do Worker
 	@cd "$(WORKER_DIR)" && docker-compose -p worker logs -f
+
+logs-frontend: ## Mostra logs do Frontend
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend logs -f
