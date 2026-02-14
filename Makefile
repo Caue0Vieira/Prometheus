@@ -107,14 +107,14 @@ api: clone-api ## Inicia a API
 	@echo "$(GREEN)Iniciando API...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api up -d
 	@echo "$(GREEN)✓ API iniciada$(NC)"
-	@sleep 2
+	@sleep 6
 	@$(MAKE) setup-api
 
 worker: clone-worker ## Inicia o Worker
 	@echo "$(GREEN)Iniciando Worker...$(NC)"
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
 	@echo "$(GREEN)✓ Worker iniciado$(NC)"
-	@sleep 2
+	@sleep 6
 	@$(MAKE) setup-worker
 
 frontend: ## Inicia o Frontend
