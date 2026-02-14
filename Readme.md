@@ -36,10 +36,9 @@ make up BASE_DIR= # Diretorio desejado
 ```
 
 Este comando irá:
-1. Criar a rede Docker `internal` (se não existir)
-   2. Iniciar a API (porta 8089)
-   3. Iniciar o Worker (porta 8014)
-   4. Iniciar o Frontend (porta 3000)
+  1. Iniciar a API (porta 8089)
+  2. Iniciar o Worker (porta 8014)
+  3. Iniciar o Frontend (porta 3000)
 
 #### Comandos úteis do Makefile
 
