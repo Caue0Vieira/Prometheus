@@ -47,9 +47,6 @@ Este comando irá:
 # Ver todos os comandos disponíveis
 make help
 
-# Criar apenas a rede Docker
-make network
-
 # Iniciar apenas a API
 make api BASE_DIR=/diretorio/desejado
 
@@ -137,12 +134,12 @@ A integração externa foi desenhada para ser segura, resiliente e escalável. O
 
 ### Fluxo de Integração
 
-1. **Sistema Externo** envia requisição com `Idempotency-Key`
-2. **API** valida autenticação, rate limit e payload
-3. **API** registra comando no `command_inbox` (status: `pending`)
+1. **Sistema Externo** envia requisição com `X-API-Key` e `Idempotency-Key`
+2. **API** valida autenticação, rate limit, idempotência e payload
+3. **API** registra comando no `command_inbox` (status: `pending`) com lock pessimista
 4. **API** envia comando para fila RabbitMQ
 5. **API** retorna `202 Accepted` com `command_id`
-6. **Worker** processa comando assincronamente
+6. **Worker** consome job da fila, revalida idempotência e processa comando assincronamente
 7. **Worker** atualiza status no `command_inbox` (`processed` ou `failed`)
 
 ---
@@ -153,8 +150,16 @@ A idempotência é **obrigatória** na criação de ocorrências e em todas as o
 
 ### Requisitos
 
-- Toda requisição precisa enviar uma `Idempotency-Key` no header
+- Toda requisição de escrita (POST, PUT, PATCH) precisa enviar uma `Idempotency-Key` no header
 - O sistema registra o comando na tabela `command_inbox` antes de qualquer processamento
+- **Todas as rotas de escrita já possuem middleware** que valida e exige `Idempotency-Key`:
+  - `POST /api/integrations/occurrences` (integração externa)
+  - `POST /api/occurrences/{id}/start`
+  - `POST /api/occurrences/{id}/resolve`
+  - `POST /api/occurrences/{id}/dispatches`
+  - `POST /api/dispatches/{id}/close`
+  - `PATCH /api/dispatches/{id}/status`
+- O frontend React envia automaticamente `Idempotency-Key` via interceptor Axios em todas as requisições POST/PUT/PATCH
 
 ### Comportamento
 
@@ -183,6 +188,11 @@ O controle é feito com base na combinação de:
 **Validação de Payload Diferente:**
 
 Se a mesma `idempotency_key` + `scope_key` for usada com payload diferente, o sistema retorna `409 Conflict` para evitar inconsistências.
+
+**Validações de Negócio Adicionais:**
+
+- Criação de despacho valida que não existe outro despacho com o mesmo `resource_code` na mesma ocorrência (lança `DomainException`).
+- Transições de status são validadas no domínio (ex.: não é possível resolver ocorrência já cancelada).
 
 ---
 
@@ -330,6 +340,16 @@ Para manter a solução viável no contexto atual, não foram implementados os s
 
 ### Funcionalidades não Implementadas
 
+#### Limpeza Automática de Comandos Expirados
+
+- **Status**: Não implementado
+- **O que existe**: Limpeza de comandos expirados foi removida do fluxo principal de processamento (otimização de performance)
+- **O que falta**: 
+  - Comando de limpeza agendado (`command-inbox:cleanup-expired`)
+  - Processo dedicado para executar limpeza periódica (cron job ou scheduler dedicado)
+  - Limpeza automática de registros com `expires_at` vencido na tabela `command_inbox`
+- **Justificativa**: A limpeza foi removida do fluxo principal para evitar locks e custo desnecessário. Pode ser implementada como processo separado quando necessário.
+
 #### Dead Letter Queue Dedicada
 
 - **Status**: Parcialmente implementado
@@ -393,6 +413,18 @@ Em um cenário corporativo maior, o sistema poderia evoluir para as seguintes me
 - **Impacto**: Detecção proativa de problemas
 
 ### Infraestrutura e Mensageria
+
+#### Limpeza Automática de Comandos Expirados
+
+- **Benefício**: Manutenção automática do banco de dados, removendo registros antigos
+- **Implementação**: 
+  - Comando de limpeza (`command-inbox:cleanup-expired`)
+  - Processo dedicado (cron job ou scheduler) para execução periódica
+  - Configuração de TTL e frequência de limpeza
+- **Impacto**: 
+  - Redução do tamanho da tabela `command_inbox`
+  - Melhor performance em consultas
+  - Manutenção automatizada sem intervenção manual
 
 #### Dead Letter Queue Estruturada
 
