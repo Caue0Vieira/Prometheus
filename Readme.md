@@ -38,7 +38,7 @@ make up BASE_DIR= # Diretorio desejado
 Este comando irá:
   1. Iniciar a API (porta 8089)
   2. Iniciar o Worker (porta 8014)
-  3. Iniciar o Frontend (porta 3000)
+  3. Iniciar o Frontend (porta 5173)
 
 #### Comandos úteis do Makefile
 
