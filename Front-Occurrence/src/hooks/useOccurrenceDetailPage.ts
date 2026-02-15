@@ -33,14 +33,14 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     mutationFn: ({ occurrenceId, data }: { occurrenceId: string; data: { resourceCode: string } }) =>
       createDispatch(occurrenceId, data),
     onSuccess: async (response, variables) => {
-      const commandId = (response as { commandId: string }).commandId;
+      const commandId = (response as { command_id: string }).command_id;
       const status = (response as { status: string }).status;
 
-      // Rastreia o commandId para exibir badge "Processando..." durante o polling
+      // Rastreia o comando para exibir badge "Processando..." durante o polling
       setProcessingDispatchCommandId(commandId);
 
-      // Se o status for "accepted", fecha o modal e mostra toast
-      if (status === 'accepted') {
+      // Se o comando foi recebido/enfileirado, fecha o modal e mostra toast
+      if (status === 'ENQUEUED' || status === 'RECEIVED') {
         setShowDispatchModal(false);
         showSuccess('Despacho criado com sucesso! Processando...');
       }

@@ -1,4 +1,4 @@
-.PHONY: help clone clone-api clone-worker api worker frontend up down clean stop restart logs-api logs-worker logs-frontend \
+.PHONY: help clone clone-api clone-worker create-network api worker frontend up down clean stop restart logs-api logs-worker logs-frontend \
        bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
 
 # =========================
@@ -31,9 +31,15 @@ FRONTEND_DOCKER_DIR := $(FRONTEND_DIR)/docker
 # =========================
 # Helpers (container id)
 # =========================
-# pega o container do compose pelo project name (api/worker)
-API_CID = $$(docker ps -q --filter "label=com.docker.compose.project=api" | head -n 1)
-WORKER_CID = $$(docker ps -q --filter "label=com.docker.compose.project=worker" | head -n 1)
+# pega o container do serviço app em cada projeto (evita cair em redis/rabbit/postgres)
+API_CID = $$(docker ps -q \
+	--filter "label=com.docker.compose.project=api" \
+	--filter "label=com.docker.compose.service=app" \
+	| head -n 1)
+WORKER_CID = $$(docker ps -q \
+	--filter "label=com.docker.compose.project=worker" \
+	--filter "label=com.docker.compose.service=app" \
+	| head -n 1)
 
 # comando padrão pra executar bash dentro do container
 API_EXEC = docker exec -it $(API_CID) bash -lc
@@ -51,6 +57,7 @@ help: ## Mostra esta mensagem de ajuda
 	@echo "$(GREEN)=== Comandos Disponíveis ===$(NC)"
 	@echo ""
 	@echo "$(YELLOW)make clone BASE_DIR=/caminho$(NC)     - Clona API/Worker no diretório escolhido"
+	@echo "$(YELLOW)make create-network$(NC)               - Cria a rede Docker compartilhada (occurrence_shared)"
 	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)        - Clona (se necessário) e inicia todos os serviços"
 	@echo "$(YELLOW)make api$(NC)                          - Inicia apenas a API"
 	@echo "$(YELLOW)make worker$(NC)                       - Inicia apenas o Worker"
@@ -103,14 +110,19 @@ clone-worker: ## Clona o Worker no caminho escolhido (WORKER_PATH)
 # =========================
 # Subidas
 # =========================
-api: clone-api ## Inicia a API
+create-network: ## Cria a rede Docker compartilhada entre API e Worker
+	@echo "$(GREEN)Garantindo rede Docker compartilhada: occurrence_shared$(NC)"
+	@docker network inspect occurrence_shared >/dev/null 2>&1 || docker network create occurrence_shared >/dev/null
+	@echo "$(GREEN)✓ Rede occurrence_shared pronta$(NC)"
+
+api: clone-api create-network ## Inicia a API
 	@echo "$(GREEN)Iniciando API...$(NC)"
 	@cd "$(API_DIR)" && docker-compose -p api up -d
 	@echo "$(GREEN)✓ API iniciada$(NC)"
 	@sleep 6
 	@$(MAKE) setup-api
 
-worker: clone-worker ## Inicia o Worker
+worker: clone-worker create-network ## Inicia o Worker
 	@echo "$(GREEN)Iniciando Worker...$(NC)"
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
 	@echo "$(GREEN)✓ Worker iniciado$(NC)"

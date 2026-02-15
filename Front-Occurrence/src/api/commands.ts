@@ -8,7 +8,7 @@ import { CommandStatusResponse } from '../types';
 /**
  * Consulta o status de um comando assíncrono
  * @param commandId - ID do comando retornado pela API após POST assíncrono
- * @returns Status atual do comando (pending, processed, failed)
+ * @returns Status atual do comando (RECEIVED, ENQUEUED, PROCESSING, SUCCEEDED, FAILED)
  */
 export const getCommandStatus = async (
   commandId: string

@@ -55,7 +55,7 @@ const createOccurrenceStatusMutation = (
             onSuccess: async (response, id) => {
                 await pollCommandAndSync({
                     queryClient,
-                    commandId: (response as { commandId: string }).commandId,
+                    commandId: (response as { command_id: string }).command_id,
                     occurrenceId: id,
                     actionLabel,
                     rollbackOnError: () => {
@@ -101,7 +101,7 @@ export const useCreateDispatch = () => {
         onSuccess: async (response, variables) => {
             await pollCommandAndSync({
                 queryClient,
-                commandId: (response as { commandId: string }).commandId,
+                commandId: (response as { command_id: string }).command_id,
                 occurrenceId: variables.occurrenceId,
                 actionLabel: 'createDispatch',
             });
@@ -148,7 +148,7 @@ export const useUpdateDispatchStatus = () => {
         onSuccess: async (response, variables) => {
             await pollCommandAndSync({
                 queryClient,
-                commandId: (response as { commandId: string }).commandId,
+                commandId: (response as { command_id: string }).command_id,
                 occurrenceId: variables.occurrenceId,
                 actionLabel: 'updateDispatchStatus',
                 rollbackOnError: () => {
