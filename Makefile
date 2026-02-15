@@ -119,8 +119,8 @@ worker: clone-worker ## Inicia o Worker
 
 frontend: ## Inicia o Frontend
 	@echo "$(GREEN)Iniciando Frontend...$(NC)"
-	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend up -d --build
-	@echo "$(GREEN)✓ Frontend iniciado em http://localhost:5173$(NC)"
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend up -d
+	@echo "$(GREEN)✓ Frontend iniciado em http://localhost:3000$(NC)"
 	@echo "$(YELLOW)Use 'make logs-frontend' para acompanhar os logs$(NC)"
 
 up: clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
