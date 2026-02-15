@@ -14,31 +14,34 @@ export const OccurrencesList = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
   const { data, isLoading, error, refetch } = useOccurrences({
     status: statusFilter || undefined,
     type: typeFilter || undefined,
     page,
-    limit: 20,
+    limit,
   });
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
     setPage(1);
-    refetch();
   };
 
   const handleTypeChange = (value: string) => {
     setTypeFilter(value);
     setPage(1);
-    refetch();
   };
 
   const handleClearFilters = () => {
     setStatusFilter('');
     setTypeFilter('');
     setPage(1);
-    refetch();
+  };
+
+  const handleLimitChange = (nextLimit: number) => {
+    setLimit(nextLimit);
+    setPage(1);
   };
 
   const handleOccurrenceClick = (id: string) => {
@@ -90,6 +93,9 @@ export const OccurrencesList = () => {
             currentPage: meta.page,
             totalPages: meta.pages,
             totalItems: meta.total,
+            pageSize: meta.limit,
+            onPageChange: setPage,
+            onPageSizeChange: handleLimitChange,
             onPrevious: () => setPage((p) => Math.max(1, p - 1)),
             onNext: () => setPage((p) => Math.min(meta.pages, p + 1)),
           }}

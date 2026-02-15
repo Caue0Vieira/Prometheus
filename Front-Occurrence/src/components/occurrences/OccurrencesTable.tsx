@@ -14,6 +14,9 @@ interface OccurrencesTableProps {
     currentPage: number;
     totalPages: number;
     totalItems: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
     onPrevious: () => void;
     onNext: () => void;
   };
@@ -104,7 +107,10 @@ export const OccurrencesTable = ({
           currentPage={pagination.currentPage}
           totalPages={pagination.totalPages}
           totalItems={pagination.totalItems}
+          pageSize={pagination.pageSize}
           currentItems={occurrences.length}
+          onPageChange={pagination.onPageChange}
+          onPageSizeChange={pagination.onPageSizeChange}
           onPrevious={pagination.onPrevious}
           onNext={pagination.onNext}
         />
