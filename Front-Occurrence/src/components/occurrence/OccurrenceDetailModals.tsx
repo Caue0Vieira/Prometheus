@@ -10,6 +10,7 @@ interface OccurrenceDetailModalsProps {
   onConfirmResolve: () => void;
   isCreatingDispatch: boolean;
   isResolving: boolean;
+  processingDispatchCount?: number;
 }
 
 export const OccurrenceDetailModals = ({
@@ -21,6 +22,7 @@ export const OccurrenceDetailModals = ({
   onConfirmResolve,
   isCreatingDispatch,
   isResolving,
+  processingDispatchCount = 0,
 }: OccurrenceDetailModalsProps) => {
   return (
     <>
@@ -29,6 +31,7 @@ export const OccurrenceDetailModals = ({
         onClose={onCreateDispatchClose}
         onSubmit={onCreateDispatchSubmit}
         isLoading={isCreatingDispatch}
+        processingCount={processingDispatchCount}
       />
 
       <ConfirmModal

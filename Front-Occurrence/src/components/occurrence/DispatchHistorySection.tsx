@@ -5,7 +5,7 @@ interface DispatchHistorySectionProps {
   occurrence: OccurrenceDetail;
   updatingDispatchId: string | null;
   isUpdating: boolean;
-  processingCommandId: string | null;
+  processingCommandIds: Set<string>;
   onUpdateStatus: (dispatchId: string, statusCode: string) => void;
 }
 
@@ -23,7 +23,7 @@ export const DispatchHistorySection = ({
   occurrence,
   updatingDispatchId,
   isUpdating,
-  processingCommandId,
+  processingCommandIds,
   onUpdateStatus,
 }: DispatchHistorySectionProps) => {
   return (
@@ -35,7 +35,7 @@ export const DispatchHistorySection = ({
         isUpdating={isUpdating}
         onUpdateStatus={onUpdateStatus}
         getNextStatuses={getNextStatuses}
-        processingCommandId={processingCommandId}
+        processingCommandIds={processingCommandIds}
       />
     </div>
   );

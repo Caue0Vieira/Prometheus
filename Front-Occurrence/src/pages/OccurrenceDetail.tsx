@@ -26,7 +26,7 @@ export const OccurrenceDetail = () => {
     processingMessage,
     processingError,
     updatingDispatchId,
-    processingDispatchCommandId,
+    processingDispatchCommandIds,
     canStart,
     canResolve,
     canCreateDispatch,
@@ -77,7 +77,7 @@ export const OccurrenceDetail = () => {
         isResolving={resolveMutation.isPending}
         isUpdatingDispatch={updateDispatchStatusMutation.isPending}
         updatingDispatchId={updatingDispatchId}
-        processingCommandId={processingDispatchCommandId}
+        processingCommandIds={processingDispatchCommandIds}
         processingMessage={processingMessage}
         processingError={processingError}
         startError={startMutation.error}
@@ -93,6 +93,7 @@ export const OccurrenceDetail = () => {
         onConfirmResolve={handleResolve}
         isCreatingDispatch={createDispatchMutation.isPending}
         isResolving={resolveMutation.isPending}
+        processingDispatchCount={processingDispatchCommandIds.size}
       />
     </>
   );

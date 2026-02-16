@@ -18,7 +18,7 @@ interface OccurrenceDetailContentProps {
   isResolving: boolean;
   isUpdatingDispatch: boolean;
   updatingDispatchId: string | null;
-  processingCommandId: string | null;
+  processingCommandIds: Set<string>;
   processingMessage: string | null;
   processingError: string | null;
   startError: Error | null;
@@ -39,7 +39,7 @@ export const OccurrenceDetailContent = ({
   isResolving,
   isUpdatingDispatch,
   updatingDispatchId,
-  processingCommandId,
+  processingCommandIds,
   processingMessage,
   processingError,
   startError,
@@ -70,7 +70,7 @@ export const OccurrenceDetailContent = ({
         occurrence={occurrence}
         updatingDispatchId={updatingDispatchId}
         isUpdating={isUpdatingDispatch}
-        processingCommandId={processingCommandId}
+        processingCommandIds={processingCommandIds}
         onUpdateStatus={onUpdateDispatchStatus}
       />
     </div>

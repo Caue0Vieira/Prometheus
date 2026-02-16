@@ -5,7 +5,7 @@ export interface PollingOptions {
     intervalMs?: number;
     maxAttempts?: number;
     onPending?: (attempt: number) => void;
-    onSuccess?: (result: string) => void;
+    onSuccess?: (result: any | null) => void;
     onError?: (errorMessage: string | null) => void;
     onTimeout?: () => void;
 }
@@ -49,13 +49,15 @@ export const pollCommandStatus = async (
                 }
                 return status;
             }
-        } catch (error) {
 
-            console.error(`Erro ao consultar status do comando (tentativa ${attempt + 1}):`, error);
-
-            // Se for erro de rede ou similar, aguarda antes de tentar novamente
+            console.warn(`Status desconhecido recebido: ${status.status}. Tratando como pendente.`);
+            if (onPending) {
+                onPending(attempt + 1);
+            }
             await new Promise((resolve) => setTimeout(resolve, intervalMs));
-
+        } catch (error) {
+            console.error(`Erro ao consultar status do comando (tentativa ${attempt + 1}):`, error);
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
         }
     }
 

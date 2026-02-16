@@ -20,7 +20,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   const [updatingDispatchId, setUpdatingDispatchId] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
-  const [processingDispatchCommandId, setProcessingDispatchCommandId] = useState<string | null>(null);
+  const [processingDispatchCommandIds, setProcessingDispatchCommandIds] = useState<Set<string>>(new Set());
 
   // Queries e mutations
   const { data, isLoading, error } = useOccurrenceDetail(occurrenceId);
@@ -36,28 +36,43 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
       const commandId = (response as { command_id: string }).command_id;
       const status = (response as { status: string }).status;
 
-      // Rastreia o comando para exibir badge "Processando..." durante o polling
-      setProcessingDispatchCommandId(commandId);
+      // Adiciona o comando ao conjunto de comandos em processamento
+      setProcessingDispatchCommandIds((prev) => new Set(prev).add(commandId));
 
-      // Se o comando foi recebido/enfileirado, fecha o modal e mostra toast
+      // Se o comando foi recebido/enfileirado, mostra toast mas mantém o modal aberto
       if (status === 'ENQUEUED' || status === 'RECEIVED') {
-        setShowDispatchModal(false);
         showSuccess('Despacho criado com sucesso! Processando...');
       }
 
-      // Inicia o polling para acompanhar o processamento
-      await pollCommandAndSync({
+      // Inicia o polling de forma assíncrona (não bloqueia a mutation)
+      pollCommandAndSync({
         queryClient,
         commandId,
         occurrenceId: variables.occurrenceId,
         actionLabel: 'createDispatch',
         rollbackOnError: () => {
-          setProcessingDispatchCommandId(null);
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
           showError('Erro ao processar despacho. Tente novamente.');
         },
+      }).then(() => {
+        // Remove o comando do conjunto quando o processamento terminar
+        setProcessingDispatchCommandIds((prev) => {
+          const next = new Set(prev);
+          next.delete(commandId);
+          return next;
+        });
+      }).catch(() => {
+        // Remove o comando mesmo em caso de erro
+        setProcessingDispatchCommandIds((prev) => {
+          const next = new Set(prev);
+          next.delete(commandId);
+          return next;
+        });
       });
-      // Limpa o estado de processamento quando o comando for processado com sucesso
-      setProcessingDispatchCommandId(null);
     },
   });
 
@@ -147,14 +162,6 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     }
   }, [data, updatingDispatchId, updateDispatchStatusMutation.isPending]);
 
-  useEffect(() => {
-    if (processingDispatchCommandId && data?.data?.dispatches && data.data.dispatches.length > 0) {
-      const timer = setTimeout(() => {
-        setProcessingDispatchCommandId(null);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [data?.data?.dispatches?.length, processingDispatchCommandId]);
 
   const occurrence = data?.data;
   const canStart = occurrence?.status_code === 'reported';
@@ -174,7 +181,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     processingMessage,
     processingError,
     updatingDispatchId,
-    processingDispatchCommandId,
+    processingDispatchCommandIds,
 
     // Permissions
     canStart,
