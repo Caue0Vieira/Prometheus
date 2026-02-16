@@ -24,6 +24,26 @@ Antes de iniciar o projeto, certifique-se de ter instalado:
   - **Node.js** (versão 18 ou superior)
   - **npm** (versão 9 ou superior)
   - **Make** (necessário para executar os comandos)
+  - **Git** (para clonar o repositório)
+
+### Clonando o Projeto
+
+1. **Clone o repositório**:
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd Prometheus
+```
+
+2. **Verifique se o Makefile existe** na raiz do projeto:
+```bash
+ls -la Makefile
+```
+
+3. **Certifique-se de que o Docker está rodando**:
+```bash
+docker --version
+docker-compose --version
+```
 
 ### Como Rodar
 
@@ -32,7 +52,7 @@ O projeto possui um `Makefile` na raiz que automatiza todo o processo de inicial
 #### Iniciar todos os serviços
 
 ```bash
-make up BASE_DIR= # Diretorio desejado
+make up BASE_DIR=/diretorio/desejado
 ```
 
 Este comando irá:
@@ -40,6 +60,50 @@ Este comando irá:
   2. Iniciar o Worker-Occurrence (porta 8014)
   3. Iniciar o Worker-Publish (porta 8015)
   4. Iniciar o Frontend (porta 3000)
+
+> **Nota**: O parâmetro `BASE_DIR` é obrigatório e deve apontar para o diretório absoluto onde o projeto está localizado.
+
+#### Rodando os serviços individualmente
+
+Caso prefira iniciar os serviços um a um, siga a ordem abaixo para garantir que as dependências estejam disponíveis:
+
+**Ordem recomendada:**
+
+1. **Primeiro: API** (depende de PostgreSQL, Redis e RabbitMQ)
+```bash
+make api BASE_DIR=/diretorio/desejado
+```
+
+   - Aguarde a API iniciar completamente
+   - Execute o setup inicial (se ainda não foi feito):
+   ```bash
+   make setup-api
+   ```
+
+2. **Segundo: Worker-Publish** (depende da API estar rodando e do RabbitMQ)
+```bash
+make worker-publish BASE_DIR=/diretorio/desejado
+```
+
+   - Este worker processa eventos da tabela `outbox` e publica na fila RabbitMQ
+
+3. **Terceiro: Worker-Occurrence** (depende do RabbitMQ e da API)
+```bash
+make worker BASE_DIR=/diretorio/desejado
+```
+
+   - Este worker consome jobs da fila RabbitMQ e processa comandos
+
+4. **Por último: Frontend** (depende da API estar acessível)
+```bash
+make frontend
+```
+
+   - O frontend se conecta à API na porta 8089
+
+> **Importante**: 
+> - Se preferir iniciar tudo de uma vez, use `make up BASE_DIR=/diretorio/desejado`
+> - Sempre use o mesmo `BASE_DIR` em todos os comandos
 
 #### Comandos úteis do Makefile
 
