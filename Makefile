@@ -125,7 +125,7 @@ worker: clone-worker create-network
 	@$(MAKE) setup-worker
 
 worker-publish: clone-worker-publish create-network
-	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish up -d --build
+	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish up -d
 	@sleep 6
 	@$(MAKE) setup-worker-publish
 

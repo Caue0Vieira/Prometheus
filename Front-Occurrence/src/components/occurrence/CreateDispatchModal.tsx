@@ -11,6 +11,7 @@ interface CreateDispatchModalProps {
   onSubmit: (resourceCode: string) => Promise<void>;
   isLoading: boolean;
   processingCount?: number;
+  commandStatuses?: Map<string, string>;
 }
 
 export const CreateDispatchModal = ({
@@ -19,6 +20,7 @@ export const CreateDispatchModal = ({
   onSubmit,
   isLoading,
   processingCount = 0,
+  commandStatuses = new Map(),
 }: CreateDispatchModalProps) => {
   const [resourceCode, setResourceCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -104,32 +106,75 @@ export const CreateDispatchModal = ({
             Formato: 2-3 letras, hífen, 2 dígitos (ex: ABT-12, UR-05)
           </p>
           {processingCount > 0 && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-blue-600">
-              <svg
-                className="animate-spin h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <span>
-                {processingCount === 1 
-                  ? '1 despacho sendo processado...' 
-                  : `${processingCount} despachos sendo processados...`}
-              </span>
+            <div className="mt-3 space-y-2">
+              {Array.from(commandStatuses.entries()).map(([commandId, status]) => {
+                const getStatusLabel = (status: string) => {
+                  switch (status) {
+                    case 'RECEIVED':
+                      return 'Recebido';
+                    case 'ENQUEUED':
+                      return 'Enfileirado';
+                    case 'PROCESSING':
+                      return 'Processando';
+                    case 'SUCCEEDED':
+                      return 'Concluído';
+                    case 'FAILED':
+                      return 'Falhou';
+                    default:
+                      return 'Processando';
+                  }
+                };
+
+                const getStatusColor = (status: string) => {
+                  switch (status) {
+                    case 'RECEIVED':
+                      return 'text-blue-600';
+                    case 'ENQUEUED':
+                      return 'text-yellow-600';
+                    case 'PROCESSING':
+                      return 'text-blue-600';
+                    case 'SUCCEEDED':
+                      return 'text-green-600';
+                    case 'FAILED':
+                      return 'text-red-600';
+                    default:
+                      return 'text-gray-600';
+                  }
+                };
+
+                const isProcessing = status === 'RECEIVED' || status === 'ENQUEUED' || status === 'PROCESSING';
+
+                return (
+                  <div key={commandId} className={`flex items-center gap-2 text-sm ${getStatusColor(status)}`}>
+                    {isProcessing && (
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    )}
+                    <span>
+                      {getStatusLabel(status)}
+                      {isProcessing && '...'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

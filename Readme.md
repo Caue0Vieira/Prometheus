@@ -171,14 +171,14 @@ Sem o padrão Outbox, há risco de inconsistência:
 ### Como Funciona
 
 1. **Registro Atômico**: API registra comando no `command_inbox` e evento na `outbox` na mesma transação
-2. **Publicação Assíncrona**: Worker-Outbox processa eventos `PENDING` da tabela `outbox` periodicamente
-3. **Publicação na Fila**: Worker-Outbox busca comando completo e publica Job na fila RabbitMQ
+2. **Publicação Assíncrona**: Worker-Publish processa eventos `PENDING` da tabela `outbox` periodicamente
+3. **Publicação na Fila**: Worker-Publish busca comando completo e publica Job na fila RabbitMQ
 4. **Rastreabilidade**: Todos os eventos são rastreados na tabela `outbox` antes e depois da publicação
 
 ### Estados da Outbox
 
 - **PENDING**: Evento aguardando publicação na fila
-- **PROCESSING**: Evento sendo processado pelo Worker-Outbox (lock ativo)
+- **PROCESSING**: Evento sendo processado pelo Worker-Publish (lock ativo)
 - **SENT**: Evento publicado com sucesso na fila RabbitMQ
 - **FAILED**: Falha definitiva na publicação (ex: comando não encontrado, event_type não suportado)
 
@@ -188,7 +188,7 @@ Sem o padrão Outbox, há risco de inconsistência:
 - ✅ **Rastreabilidade**: Todos os eventos são rastreados antes da publicação
 - ✅ **Resiliência**: Falhas na publicação não perdem eventos
 - ✅ **Reprocessamento**: Eventos `PENDING` são reprocessados automaticamente
-- ✅ **Concorrência**: Múltiplas instâncias do Worker-Outbox podem processar eventos diferentes simultaneamente
+- ✅ **Concorrência**: Múltiplas instâncias do Worker-Publish podem processar eventos diferentes simultaneamente
 
 ### Worker-Publish
 

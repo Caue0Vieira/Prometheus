@@ -5,6 +5,7 @@ export interface PollingOptions {
     intervalMs?: number;
     maxAttempts?: number;
     onPending?: (attempt: number) => void;
+    onStatusChange?: (status: CommandStatus) => void;
     onSuccess?: (result: any | null) => void;
     onError?: (errorMessage: string | null) => void;
     onTimeout?: () => void;
@@ -19,14 +20,22 @@ export const pollCommandStatus = async (
         intervalMs = 1000,
         maxAttempts = 20,
         onPending,
+        onStatusChange,
         onSuccess,
         onError,
         onTimeout,
     } = options;
 
+    let lastStatus: CommandStatus | null = null;
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
             const status = await getCommandStatus(commandId);
+
+            if (onStatusChange && status.status !== lastStatus) {
+                onStatusChange(status.status);
+                lastStatus = status.status;
+            }
 
             if (status.status === 'RECEIVED' || status.status === 'ENQUEUED' || status.status === 'PROCESSING') {
                 if (onPending) {

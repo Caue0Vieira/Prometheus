@@ -7,7 +7,8 @@ import {
   useUpdateDispatchStatus,
 } from './';
 import { createDispatch } from '../api/occurrences';
-import { pollCommandAndSync } from './utils';
+import { pollCommandStatus } from '../utils/polling';
+import { invalidateOccurrenceQueries } from './utils';
 import { useToast } from '../contexts/ToastContext';
 
 export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
@@ -21,6 +22,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [processingDispatchCommandIds, setProcessingDispatchCommandIds] = useState<Set<string>>(new Set());
+  const [commandStatuses, setCommandStatuses] = useState<Map<string, string>>(new Map());
 
   // Queries e mutations
   const { data, isLoading, error } = useOccurrenceDetail(occurrenceId);
@@ -38,6 +40,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
 
       // Adiciona o comando ao conjunto de comandos em processamento
       setProcessingDispatchCommandIds((prev) => new Set(prev).add(commandId));
+      setCommandStatuses((prev) => new Map(prev).set(commandId, status));
 
       // Se o comando foi recebido/enfileirado, mostra toast mas mantém o modal aberto
       if (status === 'ENQUEUED' || status === 'RECEIVED') {
@@ -45,33 +48,51 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
       }
 
       // Inicia o polling de forma assíncrona (não bloqueia a mutation)
-      pollCommandAndSync({
-        queryClient,
-        commandId,
-        occurrenceId: variables.occurrenceId,
-        actionLabel: 'createDispatch',
-        rollbackOnError: () => {
+      pollCommandStatus(commandId, {
+        onStatusChange: (newStatus) => {
+          setCommandStatuses((prev) => new Map(prev).set(commandId, newStatus));
+        },
+        onSuccess: (result) => {
+          console.log(`Comando createDispatch processado com sucesso`, { commandId, result });
+          invalidateOccurrenceQueries(queryClient, variables.occurrenceId);
           setProcessingDispatchCommandIds((prev) => {
             const next = new Set(prev);
             next.delete(commandId);
             return next;
           });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
+        },
+        onError: (errorMessage) => {
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
           showError('Erro ao processar despacho. Tente novamente.');
         },
-      }).then(() => {
-        // Remove o comando do conjunto quando o processamento terminar
-        setProcessingDispatchCommandIds((prev) => {
-          const next = new Set(prev);
-          next.delete(commandId);
-          return next;
-        });
-      }).catch(() => {
-        // Remove o comando mesmo em caso de erro
-        setProcessingDispatchCommandIds((prev) => {
-          const next = new Set(prev);
-          next.delete(commandId);
-          return next;
-        });
+        onTimeout: () => {
+          console.warn(`Timeout ao processar comando createDispatch. Os dados podem estar desatualizados.`);
+          invalidateOccurrenceQueries(queryClient, variables.occurrenceId);
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
+        },
       });
     },
   });
@@ -182,6 +203,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     processingError,
     updatingDispatchId,
     processingDispatchCommandIds,
+    commandStatuses,
 
     // Permissions
     canStart,
