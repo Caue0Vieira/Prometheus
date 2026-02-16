@@ -1,223 +1,215 @@
-.PHONY: help clone clone-api clone-worker create-network api worker frontend up down clean stop restart logs-api logs-worker logs-frontend \
-       bash-api bash-worker setup-api setup-worker migrate-api migrate-worker seed-api seed-worker swagger-api swagger-worker
+.PHONY: help clone clone-api clone-worker clone-worker-publish create-network \
+        api worker worker-publish frontend up down stop restart clean \
+        logs-api logs-worker logs-frontend \
+        bash-api bash-worker bash-worker-publish \
+        setup-api setup-worker setup-worker-publish \
+        migrate-api seed-api swagger-api
 
 # =========================
 # Configuração de clone
 # =========================
 
-# URL dos repositórios
 API_REPO_URL := https://github.com/Caue0Vieira/Api-Occurrence.git
 WORKER_REPO_URL := https://github.com/Caue0Vieira/Worker-Occurrence.git
+WORKER_PUBLISH_REPO_URL := https://github.com/Caue0Vieira/Worker-Publish.git
 
-# Diretório base padrão (pode ser sobrescrito: make up BASE_DIR=/caminho)
 BASE_DIR ?= $(CURDIR)
 
-# Nome das pastas (caso clone no BASE_DIR)
 API_PROJECT_NAME ?= Api-Occurrence
 WORKER_PROJECT_NAME ?= Worker-Occurrence
+WORKER_PUBLISH_PROJECT_NAME ?= Worker-Publish
 
-# Caminhos finais (podem ser sobrescritos individualmente)
 API_PATH ?= $(BASE_DIR)/$(API_PROJECT_NAME)
 WORKER_PATH ?= $(BASE_DIR)/$(WORKER_PROJECT_NAME)
+WORKER_PUBLISH_PATH ?= $(BASE_DIR)/$(WORKER_PUBLISH_PROJECT_NAME)
 
-# Caminhos para docker-compose dentro de cada projeto
 API_DIR := $(API_PATH)/docker
 WORKER_DIR := $(WORKER_PATH)/docker
+WORKER_PUBLISH_DIR := $(WORKER_PUBLISH_PATH)/docker
 
-# Caminho para o Frontend
 FRONTEND_DIR := Front-Occurrence
 FRONTEND_DOCKER_DIR := $(FRONTEND_DIR)/docker
 
 # =========================
-# Helpers (container id)
+# Helpers
 # =========================
-# pega o container do serviço app em cada projeto (evita cair em redis/rabbit/postgres)
+
 API_CID = $$(docker ps -q \
 	--filter "label=com.docker.compose.project=api" \
 	--filter "label=com.docker.compose.service=app" \
 	| head -n 1)
+
 WORKER_CID = $$(docker ps -q \
 	--filter "label=com.docker.compose.project=worker" \
 	--filter "label=com.docker.compose.service=app" \
 	| head -n 1)
 
-# comando padrão pra executar bash dentro do container
+WORKER_PUBLISH_CID = $$(docker ps -q \
+	--filter "label=com.docker.compose.project=worker-publish" \
+	--filter "label=com.docker.compose.service=app" \
+	| head -n 1)
+
 API_EXEC = docker exec -it $(API_CID) bash -lc
 WORKER_EXEC = docker exec -it $(WORKER_CID) bash -lc
+WORKER_PUBLISH_EXEC = docker exec -it $(WORKER_PUBLISH_CID) bash -lc
 
-# =========================
-# Cores para output
-# =========================
 GREEN := \033[0;32m
 YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-help: ## Mostra esta mensagem de ajuda
+# =========================
+# Help
+# =========================
+
+help:
 	@echo "$(GREEN)=== Comandos Disponíveis ===$(NC)"
-	@echo ""
-	@echo "$(YELLOW)make clone BASE_DIR=/caminho$(NC)     - Clona API/Worker no diretório escolhido"
-	@echo "$(YELLOW)make create-network$(NC)               - Cria a rede Docker compartilhada (occurrence_shared)"
-	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)        - Clona (se necessário) e inicia todos os serviços"
-	@echo "$(YELLOW)make api$(NC)                          - Inicia apenas a API"
-	@echo "$(YELLOW)make worker$(NC)                       - Inicia apenas o Worker"
-	@echo "$(YELLOW)make frontend$(NC)                     - Inicia apenas o Frontend (Docker)"
-	@echo "$(YELLOW)make setup-api$(NC)                    - .env + composer + key + migrate/seed + swagger (API)"
-	@echo "$(YELLOW)make migrate-api$(NC)                  - php artisan migrate (API)"
-	@echo "$(YELLOW)make seed-api$(NC)                     - php artisan db:seed (API)"
-	@echo "$(YELLOW)make swagger-api$(NC)                  - php artisan l5-swagger:generate (API)"
-	@echo "$(YELLOW)make bash-api$(NC)                     - Abre um bash no container da API"
-	@echo "$(YELLOW)make setup-worker$(NC)                 - Setup do Worker (se for Laravel também)"
-	@echo "$(YELLOW)make bash-worker$(NC)                  - Abre um bash no container do Worker"
-	@echo "$(YELLOW)make logs-frontend$(NC)                - Mostra logs do Frontend"
-	@echo "$(YELLOW)make down$(NC)                         - Para todos os serviços Docker"
-	@echo "$(YELLOW)make clean$(NC)                        - Remove containers, volumes e rede"
-	@echo ""
-	@echo "$(GREEN)=== Caminhos atuais ===$(NC)"
-	@echo "BASE_DIR:      $(BASE_DIR)"
-	@echo "API_PATH:      $(API_PATH)"
-	@echo "WORKER_PATH:   $(WORKER_PATH)"
+	@echo "$(YELLOW)make up BASE_DIR=/caminho$(NC)        - Sobe tudo"
+	@echo "$(YELLOW)make api$(NC)                         - Sobe API"
+	@echo "$(YELLOW)make worker$(NC)                      - Sobe Worker"
+	@echo "$(YELLOW)make worker-publish$(NC)              - Sobe Worker-Publish"
+	@echo "$(YELLOW)make frontend$(NC)                    - Sobe Frontend (Docker)"
+	@echo "$(YELLOW)make down$(NC)                        - Derruba tudo"
+	@echo "$(YELLOW)make clean$(NC)                       - Remove containers e volumes"
 	@echo ""
 
 # =========================
 # Clone
 # =========================
-clone: clone-api clone-worker ## Clona API e Worker (se não existirem)
-	@echo "$(GREEN)✓ Clone concluído$(NC)"
 
-clone-api: ## Clona a API no caminho escolhido (API_PATH)
-	@echo "$(GREEN)Preparando clone da API em: $(API_PATH)$(NC)"
+clone: clone-api clone-worker clone-worker-publish
+
+clone-api:
 	@mkdir -p "$(dir $(API_PATH))"
 	@if [ -d "$(API_PATH)/.git" ]; then \
-		echo "$(YELLOW)✓ API já clonada. Pulando...$(NC)"; \
+		echo "$(YELLOW)API já clonada$(NC)"; \
 	else \
-		echo "$(GREEN)Clonando API...$(NC)"; \
 		git clone "$(API_REPO_URL)" "$(API_PATH)"; \
-		echo "$(GREEN)✓ API clonada com sucesso$(NC)"; \
 	fi
 
-clone-worker: ## Clona o Worker no caminho escolhido (WORKER_PATH)
-	@echo "$(GREEN)Preparando clone do Worker em: $(WORKER_PATH)$(NC)"
+clone-worker:
 	@mkdir -p "$(dir $(WORKER_PATH))"
 	@if [ -d "$(WORKER_PATH)/.git" ]; then \
-		echo "$(YELLOW)✓ Worker já clonado. Pulando...$(NC)"; \
+		echo "$(YELLOW)Worker já clonado$(NC)"; \
 	else \
-		echo "$(GREEN)Clonando Worker...$(NC)"; \
 		git clone "$(WORKER_REPO_URL)" "$(WORKER_PATH)"; \
-		echo "$(GREEN)✓ Worker clonado com sucesso$(NC)"; \
 	fi
+
+clone-worker-publish:
+	@mkdir -p "$(dir $(WORKER_PUBLISH_PATH))"
+	@if [ -d "$(WORKER_PUBLISH_PATH)/.git" ]; then \
+		echo "$(YELLOW)Worker-Publish já clonado$(NC)"; \
+	else \
+		git clone "$(WORKER_PUBLISH_REPO_URL)" "$(WORKER_PUBLISH_PATH)"; \
+	fi
+
+# =========================
+# Rede Compartilhada
+# =========================
+
+create-network:
+	@docker network inspect occurrence_shared >/dev/null 2>&1 || docker network create occurrence_shared >/dev/null
 
 # =========================
 # Subidas
 # =========================
-create-network: ## Cria a rede Docker compartilhada entre API e Worker
-	@echo "$(GREEN)Garantindo rede Docker compartilhada: occurrence_shared$(NC)"
-	@docker network inspect occurrence_shared >/dev/null 2>&1 || docker network create occurrence_shared >/dev/null
-	@echo "$(GREEN)✓ Rede occurrence_shared pronta$(NC)"
 
-api: clone-api create-network ## Inicia a API
-	@echo "$(GREEN)Iniciando API...$(NC)"
+api: clone-api create-network
 	@cd "$(API_DIR)" && docker-compose -p api up -d
-	@echo "$(GREEN)✓ API iniciada$(NC)"
 	@sleep 6
 	@$(MAKE) setup-api
 
-worker: clone-worker create-network ## Inicia o Worker
-	@echo "$(GREEN)Iniciando Worker...$(NC)"
+worker: clone-worker create-network
 	@cd "$(WORKER_DIR)" && docker-compose -p worker up -d
-	@echo "$(GREEN)✓ Worker iniciado$(NC)"
 	@sleep 6
 	@$(MAKE) setup-worker
 
-frontend: ## Inicia o Frontend
-	@echo "$(GREEN)Iniciando Frontend...$(NC)"
-	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend up -d
-	@echo "$(GREEN)✓ Frontend iniciado em http://localhost:3000$(NC)"
-	@echo "$(YELLOW)Use 'make logs-frontend' para acompanhar os logs$(NC)"
+worker-publish: clone-worker-publish create-network
+	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish up -d
+	@sleep 6
+	@$(MAKE) setup-worker-publish
 
-up: clone ## Inicia todos os serviços na ordem: API -> Worker -> Frontend
-	@echo "$(GREEN)=== Iniciando todos os serviços ===$(NC)"
-	@echo ""
-	@$(MAKE) api
-	@echo ""
-	@$(MAKE) worker
-	@echo ""
-	@echo "$(GREEN)=== Serviços Docker iniciados ===$(NC)"
-	@echo "$(YELLOW)Iniciando Frontend...$(NC)"
-	@echo ""
-	@$(MAKE) frontend
+frontend:
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend up -d --build
+	@echo "$(GREEN)Frontend disponível em http://localhost:3000$(NC)"
+
+up: clone api worker worker-publish frontend
 
 # =========================
-# Setup / Artisan (API)
+# Setup API
 # =========================
-bash-api: ## Abre bash no container da API
-	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
-	@docker exec -it $(API_CID) bash
 
-setup-api: ## .env + composer + key + migrate/seed + swagger
-	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
-	@echo "$(GREEN)Rodando setup da API...$(NC)"
+setup-api:
+	@if [ -z "$(API_CID)" ]; then echo "$(RED)Container API não encontrado$(NC)"; exit 1; fi
 	@$(API_EXEC) "cp -n .env.example .env || true"
 	@$(API_EXEC) "php artisan migrate:fresh --seed --force"
 	@$(API_EXEC) "php artisan l5-swagger:generate || true"
-	@echo "$(GREEN)✓ Setup da API concluído$(NC)"
 
 migrate-api:
-	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan migrate:fresh --force"
 
 seed-api:
-	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan db:seed --force"
 
 swagger-api:
-	@if [ -z "$(API_CID)" ]; then echo "$(RED)✗ Container da API não encontrado. Rode: make api$(NC)"; exit 1; fi
 	@$(API_EXEC) "php artisan l5-swagger:generate"
 
 # =========================
-# Setup / Artisan (Worker)
+# Setup Worker
 # =========================
-bash-worker: ## Abre bash no container do Worker
-	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
-	@docker exec -it $(WORKER_CID) bash
 
 setup-worker:
-	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)✗ Container do Worker não encontrado. Rode: make worker$(NC)"; exit 1; fi
-	@echo "$(GREEN)Rodando setup do Worker...$(NC)"
+	@if [ -z "$(WORKER_CID)" ]; then echo "$(RED)Container Worker não encontrado$(NC)"; exit 1; fi
 	@$(WORKER_EXEC) "cp -n .env.example .env || true"
-	@echo "$(GREEN)✓ Setup do Worker concluído$(NC)"
+
+setup-worker-publish:
+	@if [ -z "$(WORKER_PUBLISH_CID)" ]; then echo "$(RED)Container Worker-Publish não encontrado$(NC)"; exit 1; fi
+	@$(WORKER_PUBLISH_EXEC) "cp -n .env.example .env || true"
 
 # =========================
-# Down / Stop / Clean
+# Bash
 # =========================
-down: ## Para todos os serviços Docker
-	@echo "$(YELLOW)Parando serviços Docker...$(NC)"
-	@cd "$(API_DIR)" && docker-compose -p api down 2>/dev/null || true
-	@cd "$(WORKER_DIR)" && docker-compose -p worker down 2>/dev/null || true
-	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down 2>/dev/null || true
-	@echo "$(GREEN)✓ Todos os serviços Docker foram parados$(NC)"
 
-stop: ## Para todos os serviços sem remover containers
-	@echo "$(YELLOW)Parando serviços Docker (sem remover containers)...$(NC)"
-	@cd "$(API_DIR)" && docker-compose -p api stop 2>/dev/null || true
-	@cd "$(WORKER_DIR)" && docker-compose -p worker stop 2>/dev/null || true
-	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend stop 2>/dev/null || true
-	@echo "$(GREEN)✓ Serviços Docker parados$(NC)"
+bash-api:
+	@docker exec -it $(API_CID) bash
 
-restart: stop up ## Reinicia todos os serviços
+bash-worker:
+	@docker exec -it $(WORKER_CID) bash
 
-clean: down ## Remove containers, volumes e rede
-	@echo "$(RED)Removendo containers, volumes e rede...$(NC)"
-	@cd "$(API_DIR)" && docker-compose -p api down -v 2>/dev/null || true
-	@cd "$(WORKER_DIR)" && docker-compose -p worker down -v 2>/dev/null || true
-	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down -v 2>/dev/null || true
-	@echo "$(GREEN)✓ Limpeza concluída$(NC)"
+bash-worker-publish:
+	@docker exec -it $(WORKER_PUBLISH_CID) bash
 
-logs-api: ## Mostra logs da API
+# =========================
+# Logs
+# =========================
+
+logs-api:
 	@cd "$(API_DIR)" && docker-compose -p api logs -f
 
-logs-worker: ## Mostra logs do Worker
+logs-worker:
 	@cd "$(WORKER_DIR)" && docker-compose -p worker logs -f
 
-logs-frontend: ## Mostra logs do Frontend
+logs-frontend:
 	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend logs -f
+
+# =========================
+# Stop / Down / Clean
+# =========================
+
+down:
+	@cd "$(API_DIR)" && docker-compose -p api down || true
+	@cd "$(WORKER_DIR)" && docker-compose -p worker down || true
+	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish down || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down || true
+
+stop:
+	@cd "$(API_DIR)" && docker-compose -p api stop || true
+	@cd "$(WORKER_DIR)" && docker-compose -p worker stop || true
+	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish stop || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend stop || true
+
+clean: down
+	@cd "$(API_DIR)" && docker-compose -p api down -v || true
+	@cd "$(WORKER_DIR)" && docker-compose -p worker down -v || true
+	@cd "$(WORKER_PUBLISH_DIR)" && docker-compose -p worker-publish down -v || true
+	@cd "$(FRONTEND_DOCKER_DIR)" && docker-compose -p frontend down -v || true
