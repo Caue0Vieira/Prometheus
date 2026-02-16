@@ -28,7 +28,9 @@ Antes de iniciar o projeto, certifique-se de ter instalado:
 
 ### Clonando o Projeto
 
-1. **Clone o repositório**:
+> **Importante**: O Makefile clona automaticamente os repositórios necessários quando você executa `make up`, `make api`, `make worker` ou `make worker-publish`. Se preferir clonar manualmente, siga os passos abaixo.
+
+1. **Clone o repositório principal** (se ainda não tiver):
 ```bash
 git clone <URL_DO_REPOSITORIO>
 cd Prometheus
@@ -44,6 +46,8 @@ ls -la Makefile
 docker --version
 docker-compose --version
 ```
+
+> **Nota**: Os repositórios da API, Worker-Occurrence e Worker-Publish serão clonados automaticamente na primeira execução dos comandos `make`. Você também pode cloná-los manualmente usando `make clone` ou os comandos individuais (`make clone-api`, `make clone-worker`, `make clone-worker-publish`).
 
 ### Como Rodar
 
@@ -61,7 +65,7 @@ Este comando irá:
   3. Iniciar o Worker-Publish (porta 8015)
   4. Iniciar o Frontend (porta 3000)
 
-> **Nota**: O parâmetro `BASE_DIR` é obrigatório e deve apontar para o diretório absoluto onde o projeto está localizado.
+> **Nota**: O parâmetro `BASE_DIR` é opcional. Se não especificado, o Makefile usa o diretório atual (`$(CURDIR)`). Recomenda-se especificar o caminho absoluto quando os repositórios estão em locais diferentes do diretório atual.
 
 #### Rodando os serviços individualmente
 
@@ -74,11 +78,9 @@ Caso prefira iniciar os serviços um a um, siga a ordem abaixo para garantir que
 make api BASE_DIR=/diretorio/desejado
 ```
 
-   - Aguarde a API iniciar completamente
-   - Execute o setup inicial (se ainda não foi feito):
-   ```bash
-   make setup-api
-   ```
+   - O comando `make api` já executa automaticamente o setup inicial (cria .env, migrations, seeds e swagger)
+   - Aguarde a API iniciar completamente antes de prosseguir
+   - Os serviços de infraestrutura (PostgreSQL, Redis, RabbitMQ) são iniciados automaticamente
 
 2. **Segundo: Worker-Publish** (depende da API estar rodando e do RabbitMQ)
 ```bash
@@ -153,20 +155,23 @@ make down BASE_DIR=/diretorio/desejado
 # Parar serviços sem remover containers
 make stop BASE_DIR=/diretorio/desejado
 
-# Reiniciar todos os serviços
-make restart BASE_DIR=/diretorio/desejado
-
 # Ver logs da API
 make logs-api
 
 # Ver logs do Worker-Occurrence
 make logs-worker
 
-# Ver logs do Worker-Publish
-make logs-worker-publish
+# Ver logs do Frontend
+make logs-frontend
 
 # Limpar tudo (containers, volumes e rede)
 make clean
+
+# Clonar repositórios (executado automaticamente pelo make up/api/worker/worker-publish)
+make clone                    # Clona todos os repositórios
+make clone-api                # Clona apenas a API
+make clone-worker             # Clona apenas o Worker-Occurrence
+make clone-worker-publish     # Clona apenas o Worker-Publish
 ```
 
 ### Estrutura de Portas
