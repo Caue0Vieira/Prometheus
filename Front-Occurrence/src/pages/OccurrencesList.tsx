@@ -13,12 +13,16 @@ export const OccurrencesList = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
+  const [dateFromFilter, setDateFromFilter] = useState<string>('');
+  const [dateToFilter, setDateToFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
   const { data, isLoading, error, refetch } = useOccurrences({
     status: statusFilter || undefined,
     type: typeFilter || undefined,
+    dateFrom: dateFromFilter || undefined,
+    dateTo: dateToFilter || undefined,
     page,
     limit,
   });
@@ -33,9 +37,21 @@ export const OccurrencesList = () => {
     setPage(1);
   };
 
+  const handleDateFromChange = (value: string) => {
+    setDateFromFilter(value);
+    setPage(1);
+  };
+
+  const handleDateToChange = (value: string) => {
+    setDateToFilter(value);
+    setPage(1);
+  };
+
   const handleClearFilters = () => {
     setStatusFilter('');
     setTypeFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
     setPage(1);
   };
 
@@ -80,8 +96,12 @@ export const OccurrencesList = () => {
       <OccurrencesFilters
         statusFilter={statusFilter}
         typeFilter={typeFilter}
+        dateFromFilter={dateFromFilter}
+        dateToFilter={dateToFilter}
         onStatusChange={handleStatusChange}
         onTypeChange={handleTypeChange}
+        onDateFromChange={handleDateFromChange}
+        onDateToChange={handleDateToChange}
         onClear={handleClearFilters}
       />
 

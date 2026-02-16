@@ -13,6 +13,8 @@ import {
 export interface ListOccurrencesParams {
   status?: string;
   type?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
