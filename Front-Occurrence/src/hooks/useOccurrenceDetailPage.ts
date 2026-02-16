@@ -4,6 +4,7 @@ import {
   useOccurrenceDetail,
   useStartOccurrence,
   useResolveOccurrence,
+  useCancelOccurrence,
   useUpdateDispatchStatus,
 } from './';
 import { createDispatch } from '../api/occurrences';
@@ -18,6 +19,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   // Estados de UI
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showConfirmResolveModal, setShowConfirmResolveModal] = useState(false);
+  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
   const [updatingDispatchId, setUpdatingDispatchId] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -28,6 +30,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   const { data, isLoading, error } = useOccurrenceDetail(occurrenceId);
   const startMutation = useStartOccurrence();
   const resolveMutation = useResolveOccurrence();
+  const cancelMutation = useCancelOccurrence();
   const updateDispatchStatusMutation = useUpdateDispatchStatus();
 
   // Mutation para criar despacho
@@ -137,6 +140,26 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!occurrenceId) return;
+
+    setProcessingError(null);
+    setProcessingMessage('Cancelando ocorrência...');
+    setShowConfirmCancelModal(false);
+
+    try {
+      await cancelMutation.mutateAsync(occurrenceId);
+      setTimeout(() => setProcessingMessage(null), 2000);
+    } catch (err: unknown) {
+      console.error('Erro ao cancelar ocorrência:', err);
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Erro ao cancelar ocorrência';
+      setProcessingError(errorMessage);
+      setProcessingMessage(null);
+    }
+  };
+
   const handleCreateDispatch = async (resourceCode: string) => {
     if (!occurrenceId) return;
 
@@ -187,6 +210,7 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   const occurrence = data?.data;
   const canStart = occurrence?.status_code === 'reported';
   const canResolve = occurrence?.status_code === 'in_progress';
+  const canCancel = occurrence?.status_code === 'reported' || occurrence?.status_code === 'in_progress';
 
   return {
     // Data
@@ -199,6 +223,8 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     setShowDispatchModal,
     showConfirmResolveModal,
     setShowConfirmResolveModal,
+    showConfirmCancelModal,
+    setShowConfirmCancelModal,
     processingMessage,
     processingError,
     updatingDispatchId,
@@ -208,17 +234,20 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     // Permissions
     canStart,
     canResolve,
+    canCancel,
     canCreateDispatch: canStart || canResolve,
 
     // Mutations
     startMutation,
     resolveMutation,
+    cancelMutation,
     createDispatchMutation,
     updateDispatchStatusMutation,
 
     // Handlers
     handleStart,
     handleResolve,
+    handleCancel,
     handleCreateDispatch,
     handleUpdateDispatchStatus,
   };

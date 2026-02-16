@@ -7,6 +7,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
     startOccurrence,
     resolveOccurrence,
+    cancelOccurrence,
     createDispatch,
     updateDispatchStatus,
 } from '../api/occurrences';
@@ -84,6 +85,13 @@ export const useResolveOccurrence = createOccurrenceStatusMutation(
     'resolved',
     'Resolvida',
     'resolve'
+);
+
+export const useCancelOccurrence = createOccurrenceStatusMutation(
+    cancelOccurrence,
+    'cancelled',
+    'Cancelada',
+    'cancel'
 );
 
 /**

@@ -56,6 +56,14 @@ export const resolveOccurrence = async (id: string): Promise<CommandResponse> =>
 };
 
 /**
+ * Cancela uma ocorrência
+ */
+export const cancelOccurrence = async (id: string): Promise<CommandResponse> => {
+  const response = await apiClient.post<CommandResponse>(`/occurrences/${id}/cancel`);
+  return response.data;
+};
+
+/**
  * Cria um despacho para uma ocorrência
  */
 export const createDispatch = async (
