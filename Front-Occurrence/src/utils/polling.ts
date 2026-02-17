@@ -5,7 +5,8 @@ export interface PollingOptions {
     intervalMs?: number;
     maxAttempts?: number;
     onPending?: (attempt: number) => void;
-    onSuccess?: (result: string) => void;
+    onStatusChange?: (status: CommandStatus) => void;
+    onSuccess?: (result: any | null) => void;
     onError?: (errorMessage: string | null) => void;
     onTimeout?: () => void;
 }
@@ -19,16 +20,24 @@ export const pollCommandStatus = async (
         intervalMs = 1000,
         maxAttempts = 20,
         onPending,
+        onStatusChange,
         onSuccess,
         onError,
         onTimeout,
     } = options;
 
+    let lastStatus: CommandStatus | null = null;
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
             const status = await getCommandStatus(commandId);
 
-            if (status.status === 'pending' || status.status === 'accepted') {
+            if (onStatusChange && status.status !== lastStatus) {
+                onStatusChange(status.status);
+                lastStatus = status.status;
+            }
+
+            if (status.status === 'RECEIVED' || status.status === 'ENQUEUED' || status.status === 'PROCESSING') {
                 if (onPending) {
                     onPending(attempt + 1);
                 }
@@ -36,26 +45,28 @@ export const pollCommandStatus = async (
                 continue;
             }
 
-            if (status.status === 'processed') {
+            if (status.status === 'SUCCEEDED') {
                 if (onSuccess) {
                     onSuccess(status.result);
                 }
                 return status;
             }
 
-            if (status.status === 'failed') {
+            if (status.status === 'FAILED') {
                 if (onError) {
-                    onError(status.error || null);
+                    onError(status.error_message || null);
                 }
                 return status;
             }
-        } catch (error) {
 
-            console.error(`Erro ao consultar status do comando (tentativa ${attempt + 1}):`, error);
-
-            // Se for erro de rede ou similar, aguarda antes de tentar novamente
+            console.warn(`Status desconhecido recebido: ${status.status}. Tratando como pendente.`);
+            if (onPending) {
+                onPending(attempt + 1);
+            }
             await new Promise((resolve) => setTimeout(resolve, intervalMs));
-
+        } catch (error) {
+            console.error(`Erro ao consultar status do comando (tentativa ${attempt + 1}):`, error);
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
         }
     }
 
@@ -65,10 +76,10 @@ export const pollCommandStatus = async (
 
     // Retorna um objeto indicando timeout
     return {
-        commandId: commandId,
-        status: 'pending' as CommandStatus,
+        command_id: commandId,
+        status: 'PROCESSING' as CommandStatus,
         result: null,
-        error: 'Timeout: O comando ainda está sendo processado. Tente novamente em alguns segundos.',
-        errorMessage: 'Timeout: O comando ainda está sendo processado. Tente novamente em alguns segundos.',
+        error_message: 'Timeout: O comando ainda está sendo processado. Tente novamente em alguns segundos.',
+        processed_at: null,
     };
 };

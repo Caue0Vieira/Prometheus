@@ -7,6 +7,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
     startOccurrence,
     resolveOccurrence,
+    cancelOccurrence,
     createDispatch,
     updateDispatchStatus,
 } from '../api/occurrences';
@@ -55,7 +56,7 @@ const createOccurrenceStatusMutation = (
             onSuccess: async (response, id) => {
                 await pollCommandAndSync({
                     queryClient,
-                    commandId: (response as { commandId: string }).commandId,
+                    commandId: (response as { command_id: string }).command_id,
                     occurrenceId: id,
                     actionLabel,
                     rollbackOnError: () => {
@@ -86,6 +87,13 @@ export const useResolveOccurrence = createOccurrenceStatusMutation(
     'resolve'
 );
 
+export const useCancelOccurrence = createOccurrenceStatusMutation(
+    cancelOccurrence,
+    'cancelled',
+    'Cancelada',
+    'cancel'
+);
+
 /**
  * Hook para criar um despacho
  */
@@ -101,7 +109,7 @@ export const useCreateDispatch = () => {
         onSuccess: async (response, variables) => {
             await pollCommandAndSync({
                 queryClient,
-                commandId: (response as { commandId: string }).commandId,
+                commandId: (response as { command_id: string }).command_id,
                 occurrenceId: variables.occurrenceId,
                 actionLabel: 'createDispatch',
             });
@@ -148,7 +156,7 @@ export const useUpdateDispatchStatus = () => {
         onSuccess: async (response, variables) => {
             await pollCommandAndSync({
                 queryClient,
-                commandId: (response as { commandId: string }).commandId,
+                commandId: (response as { command_id: string }).command_id,
                 occurrenceId: variables.occurrenceId,
                 actionLabel: 'updateDispatchStatus',
                 rollbackOnError: () => {

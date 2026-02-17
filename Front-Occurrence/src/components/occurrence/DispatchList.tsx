@@ -11,7 +11,7 @@ export interface DispatchListProps {
   isUpdating: boolean;
   onUpdateStatus: (dispatchId: string, statusCode: string) => void;
   getNextStatuses: (currentStatus: string) => string[];
-  processingCommandId?: string | null;
+  processingCommandIds?: Set<string>;
 }
 
 export const DispatchList = ({
@@ -20,15 +20,17 @@ export const DispatchList = ({
   isUpdating,
   onUpdateStatus,
   getNextStatuses,
-  processingCommandId,
+  processingCommandIds = new Set(),
 }: DispatchListProps) => {
-  if (dispatches.length === 0 && !processingCommandId) {
+  const hasProcessingCommands = processingCommandIds.size > 0;
+
+  if (dispatches.length === 0 && !hasProcessingCommands) {
     return (
       <p className="text-gray-500 text-center py-8">Nenhum despacho registrado ainda</p>
     );
   }
 
-  if (dispatches.length === 0 && processingCommandId) {
+  if (dispatches.length === 0 && hasProcessingCommands) {
     return (
       <div className="text-center py-8">
         <div className="flex items-center justify-center gap-2 text-blue-600">
@@ -52,7 +54,11 @@ export const DispatchList = ({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <span className="text-sm font-medium">Processando despacho...</span>
+          <span className="text-sm font-medium">
+            {processingCommandIds.size === 1 
+              ? 'Processando despacho...' 
+              : `Processando ${processingCommandIds.size} despachos...`}
+          </span>
         </div>
       </div>
     );
@@ -60,10 +66,10 @@ export const DispatchList = ({
 
   return (
     <div className="space-y-4">
-      {dispatches.map((dispatch, index) => {
+      {dispatches.map((dispatch) => {
         const nextStatuses = getNextStatuses(dispatch.status_code);
         const isUpdatingThis = updatingDispatchId === dispatch.id && isUpdating;
-        const isProcessing = Boolean(processingCommandId && index === dispatches.length - 1);
+        const isProcessing = false;
 
         return (
           <DispatchItem

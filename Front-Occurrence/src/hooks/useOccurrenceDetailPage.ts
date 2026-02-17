@@ -4,10 +4,12 @@ import {
   useOccurrenceDetail,
   useStartOccurrence,
   useResolveOccurrence,
+  useCancelOccurrence,
   useUpdateDispatchStatus,
 } from './';
 import { createDispatch } from '../api/occurrences';
-import { pollCommandAndSync } from './utils';
+import { pollCommandStatus } from '../utils/polling';
+import { invalidateOccurrenceQueries } from './utils';
 import { useToast } from '../contexts/ToastContext';
 
 export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
@@ -17,15 +19,18 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
   // Estados de UI
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showConfirmResolveModal, setShowConfirmResolveModal] = useState(false);
+  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
   const [updatingDispatchId, setUpdatingDispatchId] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
-  const [processingDispatchCommandId, setProcessingDispatchCommandId] = useState<string | null>(null);
+  const [processingDispatchCommandIds, setProcessingDispatchCommandIds] = useState<Set<string>>(new Set());
+  const [commandStatuses, setCommandStatuses] = useState<Map<string, string>>(new Map());
 
   // Queries e mutations
   const { data, isLoading, error } = useOccurrenceDetail(occurrenceId);
   const startMutation = useStartOccurrence();
   const resolveMutation = useResolveOccurrence();
+  const cancelMutation = useCancelOccurrence();
   const updateDispatchStatusMutation = useUpdateDispatchStatus();
 
   // Mutation para criar despacho
@@ -33,31 +38,65 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     mutationFn: ({ occurrenceId, data }: { occurrenceId: string; data: { resourceCode: string } }) =>
       createDispatch(occurrenceId, data),
     onSuccess: async (response, variables) => {
-      const commandId = (response as { commandId: string }).commandId;
+      const commandId = (response as { command_id: string }).command_id;
       const status = (response as { status: string }).status;
 
-      // Rastreia o commandId para exibir badge "Processando..." durante o polling
-      setProcessingDispatchCommandId(commandId);
+      // Adiciona o comando ao conjunto de comandos em processamento
+      setProcessingDispatchCommandIds((prev) => new Set(prev).add(commandId));
+      setCommandStatuses((prev) => new Map(prev).set(commandId, status));
 
-      // Se o status for "accepted", fecha o modal e mostra toast
-      if (status === 'accepted') {
-        setShowDispatchModal(false);
+      // Se o comando foi recebido/enfileirado, mostra toast mas mantém o modal aberto
+      if (status === 'ENQUEUED' || status === 'RECEIVED') {
         showSuccess('Despacho criado com sucesso! Processando...');
       }
 
-      // Inicia o polling para acompanhar o processamento
-      await pollCommandAndSync({
-        queryClient,
-        commandId,
-        occurrenceId: variables.occurrenceId,
-        actionLabel: 'createDispatch',
-        rollbackOnError: () => {
-          setProcessingDispatchCommandId(null);
+      // Inicia o polling de forma assíncrona (não bloqueia a mutation)
+      pollCommandStatus(commandId, {
+        onStatusChange: (newStatus) => {
+          setCommandStatuses((prev) => new Map(prev).set(commandId, newStatus));
+        },
+        onSuccess: (result) => {
+          console.log(`Comando createDispatch processado com sucesso`, { commandId, result });
+          invalidateOccurrenceQueries(queryClient, variables.occurrenceId);
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
+        },
+        onError: (errorMessage) => {
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
           showError('Erro ao processar despacho. Tente novamente.');
         },
+        onTimeout: () => {
+          console.warn(`Timeout ao processar comando createDispatch. Os dados podem estar desatualizados.`);
+          invalidateOccurrenceQueries(queryClient, variables.occurrenceId);
+          setProcessingDispatchCommandIds((prev) => {
+            const next = new Set(prev);
+            next.delete(commandId);
+            return next;
+          });
+          setCommandStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(commandId);
+            return next;
+          });
+        },
       });
-      // Limpa o estado de processamento quando o comando for processado com sucesso
-      setProcessingDispatchCommandId(null);
     },
   });
 
@@ -96,6 +135,26 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         'Erro ao encerrar ocorrência';
+      setProcessingError(errorMessage);
+      setProcessingMessage(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!occurrenceId) return;
+
+    setProcessingError(null);
+    setProcessingMessage('Cancelando ocorrência...');
+    setShowConfirmCancelModal(false);
+
+    try {
+      await cancelMutation.mutateAsync(occurrenceId);
+      setTimeout(() => setProcessingMessage(null), 2000);
+    } catch (err: unknown) {
+      console.error('Erro ao cancelar ocorrência:', err);
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Erro ao cancelar ocorrência';
       setProcessingError(errorMessage);
       setProcessingMessage(null);
     }
@@ -147,18 +206,11 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     }
   }, [data, updatingDispatchId, updateDispatchStatusMutation.isPending]);
 
-  useEffect(() => {
-    if (processingDispatchCommandId && data?.data?.dispatches && data.data.dispatches.length > 0) {
-      const timer = setTimeout(() => {
-        setProcessingDispatchCommandId(null);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [data?.data?.dispatches?.length, processingDispatchCommandId]);
 
   const occurrence = data?.data;
   const canStart = occurrence?.status_code === 'reported';
   const canResolve = occurrence?.status_code === 'in_progress';
+  const canCancel = occurrence?.status_code === 'reported' || occurrence?.status_code === 'in_progress';
 
   return {
     // Data
@@ -171,25 +223,31 @@ export const useOccurrenceDetailPage = (occurrenceId: string | undefined) => {
     setShowDispatchModal,
     showConfirmResolveModal,
     setShowConfirmResolveModal,
+    showConfirmCancelModal,
+    setShowConfirmCancelModal,
     processingMessage,
     processingError,
     updatingDispatchId,
-    processingDispatchCommandId,
+    processingDispatchCommandIds,
+    commandStatuses,
 
     // Permissions
     canStart,
     canResolve,
+    canCancel,
     canCreateDispatch: canStart || canResolve,
 
     // Mutations
     startMutation,
     resolveMutation,
+    cancelMutation,
     createDispatchMutation,
     updateDispatchStatusMutation,
 
     // Handlers
     handleStart,
     handleResolve,
+    handleCancel,
     handleCreateDispatch,
     handleUpdateDispatchStatus,
   };

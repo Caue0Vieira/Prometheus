@@ -13,6 +13,8 @@ import {
 export interface ListOccurrencesParams {
   status?: string;
   type?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
@@ -52,6 +54,14 @@ export const startOccurrence = async (id: string): Promise<CommandResponse> => {
  */
 export const resolveOccurrence = async (id: string): Promise<CommandResponse> => {
   const response = await apiClient.post<CommandResponse>(`/occurrences/${id}/resolve`);
+  return response.data;
+};
+
+/**
+ * Cancela uma ocorrência
+ */
+export const cancelOccurrence = async (id: string): Promise<CommandResponse> => {
+  const response = await apiClient.post<CommandResponse>(`/occurrences/${id}/cancel`);
   return response.data;
 };
 

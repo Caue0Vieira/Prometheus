@@ -71,13 +71,17 @@ export const pollCommandAndSync = async (params: {
   const { queryClient, commandId, occurrenceId, actionLabel, rollbackOnError } = params;
 
   await pollCommandStatus(commandId, {
-    onSuccess: () => invalidateOccurrenceQueries(queryClient, occurrenceId),
+    onSuccess: (result) => {
+      console.log(`Comando ${actionLabel} processado com sucesso`, { commandId, result });
+      invalidateOccurrenceQueries(queryClient, occurrenceId);
+    },
     onError: (errorMessage) => {
       if (rollbackOnError) rollbackOnError();
       console.error(`Erro ao processar comando ${actionLabel}:`, errorMessage);
     },
     onTimeout: () => {
       console.warn(`Timeout ao processar comando ${actionLabel}. Os dados podem estar desatualizados.`);
+      invalidateOccurrenceQueries(queryClient, occurrenceId);
     },
   });
 };

@@ -2,22 +2,30 @@
  * Componente de filtros da lista de ocorrências
  */
 
-import { Button, Select, LoadingSpinner } from '../common';
+import { Button, Select, Input, LoadingSpinner } from '../common';
 import { useOccurrenceTypes, useOccurrenceStatuses } from '../../hooks';
 
 interface OccurrencesFiltersProps {
   statusFilter: string;
   typeFilter: string;
+  dateFromFilter: string;
+  dateToFilter: string;
   onStatusChange: (value: string) => void;
   onTypeChange: (value: string) => void;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
   onClear: () => void;
 }
 
 export const OccurrencesFilters = ({
   statusFilter,
   typeFilter,
+  dateFromFilter,
+  dateToFilter,
   onStatusChange,
   onTypeChange,
+  onDateFromChange,
+  onDateToChange,
   onClear,
 }: OccurrencesFiltersProps) => {
   const { data: typesData, isLoading: isLoadingTypes } = useOccurrenceTypes();
@@ -42,7 +50,7 @@ export const OccurrencesFilters = ({
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {isLoadingStatuses ? (
           <div className="flex items-center justify-center h-10">
             <LoadingSpinner size="sm" />
@@ -68,6 +76,20 @@ export const OccurrencesFilters = ({
             onChange={(e) => onTypeChange(e.target.value)}
           />
         )}
+
+        <Input
+          label="Data Inicial"
+          type="date"
+          value={dateFromFilter}
+          onChange={(e) => onDateFromChange(e.target.value)}
+        />
+
+        <Input
+          label="Data Final"
+          type="date"
+          value={dateToFilter}
+          onChange={(e) => onDateToChange(e.target.value)}
+        />
 
         <div className="flex items-end">
           <Button variant="secondary" onClick={onClear}>

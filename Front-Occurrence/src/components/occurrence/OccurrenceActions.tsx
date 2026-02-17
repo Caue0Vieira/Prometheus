@@ -7,31 +7,39 @@ import { Button, LoadingSpinner, ErrorAlert } from '../common';
 interface OccurrenceActionsProps {
   canStart: boolean;
   canResolve: boolean;
+  canCancel: boolean;
   canCreateDispatch: boolean;
   onStart: () => void;
   onResolve: () => void;
+  onCancel: () => void;
   onCreateDispatch: () => void;
   isStarting: boolean;
   isResolving: boolean;
+  isCancelling: boolean;
   processingMessage: string | null;
   processingError: string | null;
   startError?: Error | null;
   resolveError?: Error | null;
+  cancelError?: Error | null;
 }
 
 export const OccurrenceActions = ({
   canStart,
   canResolve,
+  canCancel,
   canCreateDispatch,
   onStart,
   onResolve,
+  onCancel,
   onCreateDispatch,
   isStarting,
   isResolving,
+  isCancelling,
   processingMessage,
   processingError,
   startError,
   resolveError,
+  cancelError,
 }: OccurrenceActionsProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -49,6 +57,12 @@ export const OccurrenceActions = ({
           </Button>
         )}
 
+        {canCancel && (
+          <Button variant="warning" onClick={onCancel} isLoading={isCancelling}>
+            Cancelar Ocorrência
+          </Button>
+        )}
+
         {canCreateDispatch && (
           <Button variant="primary" onClick={onCreateDispatch}>
             Criar Despacho
@@ -63,13 +77,14 @@ export const OccurrenceActions = ({
         </div>
       )}
 
-      {(startError || resolveError || processingError) && (
+      {(startError || resolveError || cancelError || processingError) && (
         <div className="mt-4">
           <ErrorAlert
             message={
               processingError ||
               startError?.message ||
               resolveError?.message ||
+              cancelError?.message ||
               'Erro ao executar ação'
             }
           />

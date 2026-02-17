@@ -1,15 +1,14 @@
-export type CommandStatus = 'pending' | 'processed' | 'failed' | 'accepted';
+export type CommandStatus = 'RECEIVED' | 'ENQUEUED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED';
 
 export interface CommandResponse {
-    commandId: string;
-    status: string;
+    command_id: string;
+    status: CommandStatus;
 }
 
 export interface CommandStatusResponse {
-    commandId: string;
+    command_id: string;
     status: CommandStatus;
     result: any | null;
-    error: string | null;
-    errorMessage?: string | null;
-    processedAt?: string | null;
+    error_message: string | null;
+    processed_at?: string | null;
 }

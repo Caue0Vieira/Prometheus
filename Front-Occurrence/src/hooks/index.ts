@@ -6,6 +6,7 @@ export { useOccurrenceStatuses } from './useOccurrenceStatuses';
 export {
   useStartOccurrence,
   useResolveOccurrence,
+  useCancelOccurrence,
   useCreateDispatch,
   useUpdateDispatchStatus,
 } from './useOccurrenceMutations';
