@@ -1,12 +1,26 @@
-# Prova Bomb - Sistema de Gerenciamento de Ocorrências
+# Prova Bomb (Prometheus) — Sistema de Gerenciamento de Ocorrências
 
-## Acesso ao Sistema em Produção
+## Acesso ao Sistema em Dev
 
-O sistema está disponível em produção no seguinte endereço:
+**Frontend**: [http://138.197.101.197:8088](http://138.197.101.197:8088)
 
-- **Frontend**: [http://138.197.101.197:8088](http://138.197.101.197:8088)
+> Para desenvolvimento local, consulte "Como Rodar Backend e Frontend".
 
-> **Nota**: Para desenvolvimento local, consulte a seção "Como Rodar Backend e Frontend" abaixo.
+---
+
+## Sumário
+
+1. [Como Rodar Backend e Frontend](#1-como-rodar-backend-e-frontend)
+2. [Desenho de Arquitetura](#2-desenho-de-arquitetura)
+3. [Estratégia de Integração Externa](#3-estratégia-de-integração-externa)
+4. [Padrão Outbox](#4-padrão-outbox)
+5. [Estratégia de Idempotência](#5-estratégia-de-idempotência)
+6. [Estratégia de Concorrência](#6-estratégia-de-concorrência)
+7. [Pontos de Falha e Recuperação](#7-pontos-de-falha-e-recuperação)
+8. [Como Validar Rapidamente (CURLs)](#8-como-validar-rapidamente-curls)
+9. [Testes Automatizados](#9-testes-automatizados)
+10. [O que ficou de fora](#10-o-que-ficou-de-fora)
+11. [Possível Evolução na Corporação](#11-possível-evolução-na-corporação)
 
 ---
 
@@ -14,9 +28,9 @@ O sistema está disponível em produção no seguinte endereço:
 
 ### Ambiente Recomendado
 
-Para evitar problemas de compatibilidade e permissões, recomenda-se executar todo o projeto em um ambiente Linux (Ubuntu 22.04 ou superior).
+Para evitar problemas de compatibilidade e permissões, recomenda-se executar todo o projeto em um ambiente **Linux (Ubuntu 22.04 ou superior)**.
 
-> Embora seja possível rodar no Windows ou macOS, o ambiente Ubuntu oferece maior estabilidade com Docker, Make e Node.js.
+> Embora seja possível rodar no Windows ou macOS, o ambiente Ubuntu oferece maior estabilidade com Docker e Make.
 
 O ideal é:
 
@@ -30,23 +44,23 @@ O ideal é:
 Antes de iniciar o projeto, certifique-se de ter instalado:
 
 - **Docker** (versão 20.10 ou superior)
-  - **Docker Compose** (versão 2.0 ou superior)
-  - **Node.js** (versão 18 ou superior)
-  - **npm** (versão 9 ou superior)
-  - **Make** (necessário para executar os comandos)
-  - **Git** (para clonar o repositório)
+- **Docker Compose** (versão 2.0 ou superior)
+- **Node.js** (versão 18 ou superior)
+- **npm** (versão 9 ou superior)
+- **Make**
+- **Git**
 
 ### Clonando o Projeto
 
 > **Importante**: O Makefile clona automaticamente os repositórios necessários quando você executa `make up`, `make api`, `make worker` ou `make worker-publish`. Se preferir clonar manualmente, siga os passos abaixo.
 
-1. **Clone o repositório principal** (se ainda não tiver):
+1. **Clone o repositório principal**:
 ```bash
 git clone <URL_DO_REPOSITORIO>
 cd Prometheus
 ```
 
-2. **Verifique se o Makefile existe** na raiz do projeto:
+2. **Verifique se o Makefile existe na raiz**:
 ```bash
 ls -la Makefile
 ```
@@ -54,14 +68,14 @@ ls -la Makefile
 3. **Certifique-se de que o Docker está rodando**:
 ```bash
 docker --version
-docker-compose --version
+docker compose version
 ```
 
-> **Nota**: Os repositórios da API, Worker-Occurrence e Worker-Publish serão clonados automaticamente na primeira execução dos comandos `make`. Você também pode cloná-los manualmente usando `make clone` ou os comandos individuais (`make clone-api`, `make clone-worker`, `make clone-worker-publish`).
+> **Nota**: Os repositórios da API, Worker-Occurrence e Worker-Publish serão clonados automaticamente na primeira execução dos comandos `make`. Você também pode cloná-los manualmente usando `make clone` ou comandos individuais (`make clone-api`, `make clone-worker`, `make clone-worker-publish`).
 
 ### Como Rodar
 
-O projeto possui um `Makefile` na raiz que automatiza todo o processo de inicialização.
+O projeto possui um `Makefile` na raiz que automatiza o processo de inicialização.
 
 #### Iniciar todos os serviços
 
@@ -70,54 +84,42 @@ make up BASE_DIR=/diretorio/desejado
 ```
 
 Este comando irá:
-  1. Iniciar a API (porta 8089)
-  2. Iniciar o Worker-Occurrence (porta 8014)
-  3. Iniciar o Worker-Publish (porta 8015)
-  4. Iniciar o Frontend (porta 3000)
+1. Iniciar a API (porta 8089)
+2. Iniciar o Worker-Occurrence (porta 8014)
+3. Iniciar o Worker-Publish (porta 8015)
+4. Iniciar o Frontend (porta 3000)
 
-> **Nota**: O parâmetro `BASE_DIR` é opcional. Se não especificado, o Makefile usa o diretório atual (`$(CURDIR)`). Recomenda-se especificar o caminho absoluto quando os repositórios estão em locais diferentes do diretório atual.
+> **Nota**: O parâmetro `BASE_DIR` é opcional. Se não especificado, o Makefile usa o diretório atual (`$(CURDIR)`). Recomenda-se especificar o caminho absoluto quando os repositórios estão em locais diferentes.
 
 #### Rodando os serviços individualmente
 
-Caso prefira iniciar os serviços um a um, siga a ordem abaixo para garantir que as dependências estejam disponíveis:
-
 **Ordem recomendada:**
 
-1. **Primeiro: API** (depende de PostgreSQL, Redis e RabbitMQ)
+1. **API** (depende de PostgreSQL, Redis e RabbitMQ)
 ```bash
 make api BASE_DIR=/diretorio/desejado
 ```
+   - O `make api` executa automaticamente setup inicial (cria .env, roda migrations, seeds e swagger).
+   - Aguarde a API iniciar completamente antes de prosseguir.
 
-   - O comando `make api` já executa automaticamente o setup inicial (cria .env, migrations, seeds e swagger)
-   - Aguarde a API iniciar completamente antes de prosseguir
-   - Os serviços de infraestrutura (PostgreSQL, Redis, RabbitMQ) são iniciados automaticamente
-
-2. **Segundo: Worker-Publish** (depende da API estar rodando e do RabbitMQ)
+2. **Worker-Publish** (depende da API e do RabbitMQ)
 ```bash
 make worker-publish BASE_DIR=/diretorio/desejado
 ```
 
-   - Este worker processa eventos da tabela `outbox` e publica na fila RabbitMQ
-
-3. **Terceiro: Worker-Occurrence** (depende do RabbitMQ e da API)
+3. **Worker-Occurrence** (depende do RabbitMQ e da API)
 ```bash
 make worker BASE_DIR=/diretorio/desejado
 ```
 
-   - Este worker consome jobs da fila RabbitMQ e processa comandos
-
-4. **Por último: Frontend** (depende da API estar acessível)
+4. **Frontend** (depende da API acessível)
 ```bash
 make frontend
 ```
 
-   - O frontend se conecta à API na porta 8089
+> **Importante**: sempre use o mesmo `BASE_DIR` em todos os comandos.
 
-> **Importante**: 
-> - Se preferir iniciar tudo de uma vez, use `make up BASE_DIR=/diretorio/desejado`
-> - Sempre use o mesmo `BASE_DIR` em todos os comandos
-
-#### Comandos úteis do Makefile
+### Comandos úteis do Makefile
 
 ```bash
 # Ver todos os comandos disponíveis
@@ -196,6 +198,10 @@ make clone-worker-publish     # Clona apenas o Worker-Publish
 | RabbitMQ AMQP | 5672 | Mensageria |
 | RabbitMQ Management | 15672 | Interface web do RabbitMQ |
 
+**Links úteis (local):**
+- **Swagger**: http://localhost:8089/api/documentation
+- **RabbitMQ Management**: http://localhost:15672
+
 ---
 
 ## 2. Desenho de Arquitetura
@@ -212,28 +218,27 @@ O sistema é composto por componentes que trabalham em conjunto para gerenciar o
 
 ## 3. Estratégia de Integração Externa
 
-A integração externa foi desenhada para ser segura, resiliente e escalável. Optamos por um modelo baseado em **API REST** com processamento assíncrono, separando claramente o momento de recebimento da requisição do momento de processamento da regra de negócio.
+A integração externa foi desenhada para ser segura, resiliente e escalável. Foi adotado um modelo baseado em **API REST** com processamento assíncrono, separando claramente o momento de recebimento da requisição do momento de processamento da regra de negócio.
 
-### Princípios da Estratégia
+### Princípios
 
-- **API recebe, valida e registra o comando**: O processamento ocorre de forma desacoplada via fila
-- **Padrão Outbox**: Eventos são registrados na tabela `outbox` antes da publicação na fila, garantindo atomicidade
-- **Melhor desempenho**: API responde rapidamente (202 Accepted) sem bloquear
-- **Maior confiabilidade**: Falhas no processamento não afetam a resposta da API
-- **Controle de falhas**: Comandos são rastreados e podem ser reprocessados
+- **API recebe, valida e registra o comando**: o processamento ocorre desacoplado via fila
+- **Padrão Outbox**: eventos são registrados na tabela `outbox` antes da publicação na fila, garantindo atomicidade
+- **Resposta rápida**: API retorna `202 Accepted` com `command_id`
+- **Rastreabilidade**: comandos e eventos são auditáveis e reprocessáveis
 
-### Fluxo de Integração
+### Fluxo
 
-1. **Sistema Externo** envia requisição com `X-API-Key` e `Idempotency-Key`
+1. **Sistema Externo** envia `POST /api/integrations/occurrences` com `X-API-Key` e `Idempotency-Key`
 2. **API** valida autenticação, rate limit, idempotência e payload
 3. **API** registra comando no `command_inbox` (status: `RECEIVED`) com lock pessimista
-4. **API** registra evento na tabela `outbox` (status: `PENDING`) - **Padrão Outbox**
+4. **API** registra evento na tabela `outbox` (status: `PENDING`) na mesma transação
 5. **API** retorna `202 Accepted` com `command_id`
-6. **Worker-Publish** processa eventos `PENDING` da tabela `outbox` periodicamente
+6. **Worker-Publish** processa eventos `PENDING` na `outbox` periodicamente
 7. **Worker-Publish** busca comando no `command_inbox` e publica Job na fila RabbitMQ
-8. **Worker-Publish** marca evento como `SENT` na tabela `outbox`
-9. **Worker-Occurrence** consome job da fila, revalida idempotência e processa comando assincronamente
-10. **Worker-Occurrence** atualiza status no `command_inbox` (`PROCESSING`, `SUCCEEDED` ou `FAILED`)
+8. **Worker-Publish** marca evento como `SENT` na `outbox` e comando como `ENQUEUED`
+9. **Worker-Occurrence** consome job da fila e processa o comando assincronamente
+10. **Worker-Occurrence** atualiza status do `command_inbox` (`PROCESSING`, `SUCCEEDED` ou `FAILED`)
 
 ---
 
@@ -243,40 +248,31 @@ O sistema utiliza o padrão **Outbox** para garantir publicação atômica de ev
 
 ### Por que Outbox?
 
-Sem o padrão Outbox, há risco de inconsistência:
-- Se a API registrar o comando no banco e falhar ao publicar na fila, o comando fica "perdido"
-- Se a API publicar na fila e falhar ao registrar no banco, há duplicação ou inconsistência
+Sem Outbox, há risco de inconsistência:
 
-### Como Funciona
+- **Persistir no banco e falhar ao publicar na fila** → comando "perdido"
+- **Publicar na fila e falhar ao persistir** → efeitos fora de sincronia / duplicidade
 
-1. **Registro Atômico**: API registra comando no `command_inbox` e evento na `outbox` na mesma transação
-2. **Publicação Assíncrona**: Worker-Publish processa eventos `PENDING` da tabela `outbox` periodicamente
-3. **Publicação na Fila**: Worker-Publish busca comando completo e publica Job na fila RabbitMQ
-4. **Rastreabilidade**: Todos os eventos são rastreados na tabela `outbox` antes e depois da publicação
+### Como funciona
 
-### Estados da Outbox
+1. **API registra `command_inbox` e `outbox` na mesma transação**
+2. **Worker-Publish publica eventos pendentes na fila**
+3. **Evento passa por estados** (`PENDING` → `PROCESSING` → `SENT`/`FAILED`)
 
-- **PENDING**: Evento aguardando publicação na fila
-- **PROCESSING**: Evento sendo processado pelo Worker-Publish (lock ativo)
-- **SENT**: Evento publicado com sucesso na fila RabbitMQ
-- **FAILED**: Falha definitiva na publicação (ex: comando não encontrado, event_type não suportado)
+### Estados
+
+- **PENDING**: aguardando publicação
+- **PROCESSING**: sendo publicado (lock ativo)
+- **SENT**: publicado com sucesso
+- **FAILED**: falha definitiva (ex.: comando inexistente, tipo inválido)
 
 ### Benefícios
 
-- ✅ **Atomicidade**: Comando e evento registrados na mesma transação
-- ✅ **Rastreabilidade**: Todos os eventos são rastreados antes da publicação
-- ✅ **Resiliência**: Falhas na publicação não perdem eventos
-- ✅ **Reprocessamento**: Eventos `PENDING` são reprocessados automaticamente
-- ✅ **Concorrência**: Múltiplas instâncias do Worker-Publish podem processar eventos diferentes simultaneamente
-
-### Worker-Publish
-
-O Worker-Publish é responsável por:
-- Processar eventos `PENDING` da tabela `outbox` (execução a cada minuto)
-- Buscar comandos completos no `command_inbox` usando `aggregate_id`
-- Mapear `event_type` para `commandType` e classe de Job
-- Publicar Jobs na fila RabbitMQ
-- Gerenciar estados dos eventos na `outbox`
+- ✅ **Atomicidade**
+- ✅ **Rastreabilidade**
+- ✅ **Resiliência**
+- ✅ **Reprocessamento**
+- ✅ **Concorrência segura** (com `SKIP LOCKED`)
 
 ---
 
@@ -286,62 +282,70 @@ A idempotência é **obrigatória** na criação de ocorrências e em todas as o
 
 ### Requisitos
 
-- Toda requisição de escrita (POST, PUT, PATCH) precisa enviar uma `Idempotency-Key` no header
-- O sistema registra o comando na tabela `command_inbox` antes de qualquer processamento
-- **Todas as rotas de escrita já possuem middleware** que valida e exige `Idempotency-Key`:
-  - `POST /api/integrations/occurrences` (integração externa)
+- Toda requisição de escrita (POST/PUT/PATCH) deve enviar `Idempotency-Key`
+- O sistema registra o comando no `command_inbox` antes de qualquer processamento
+- **Rotas com idempotência** (middleware):
+  - `POST /api/integrations/occurrences`
   - `POST /api/occurrences/{id}/start`
   - `POST /api/occurrences/{id}/resolve`
   - `POST /api/occurrences/{id}/cancel`
   - `POST /api/occurrences/{id}/dispatches`
   - `POST /api/dispatches/{id}/close`
   - `PATCH /api/dispatches/{id}/status`
-- O frontend React envia automaticamente `Idempotency-Key` via interceptor Axios em todas as requisições POST/PUT/PATCH
+- O frontend React envia automaticamente `Idempotency-Key` via interceptor Axios em todas as requisições mutáveis.
 
-### Comportamento
+### Controle
 
-Se a mesma chave for enviada novamente:
+A deduplicação é feita pela combinação:
 
-- ✅ O comando **não é processado duas vezes**
-- ✅ O sistema retorna o status já existente
-- ✅ Evita duplicação de dados
+- `idempotency_key` (chave do cliente)
+- `scope_key` (escopo; ex.: `externalId`, `occurrenceId`, `dispatchId`)
+- `type` (tipo do comando, ex.: `create_occurrence`)
 
-### Proteções
+### Payload diferente com mesma key
 
-Isso protege contra:
+Se (`idempotency_key` + `scope_key` + `type`) já existe e o `payload_hash` diverge:
 
-- **Retries automáticos**: Cliente pode reenviar sem criar duplicatas
-- **Timeouts de rede**: Requisição pode ser reenviada com segurança
-- **Requisições duplicadas**: Múltiplas requisições simultâneas são tratadas como uma
+- retorna `409 Conflict`
+- não executa nenhum efeito
 
-### Controle de Idempotência
+### Validações de negócio adicionais
 
-O controle é feito com base na combinação de:
+- Criação de despacho valida que não existe outro despacho com o mesmo `resource_code` na mesma ocorrência.
+- Transições de status são validadas no domínio (ex.: não resolve ocorrência cancelada).
 
-- `idempotency_key`: Chave única fornecida pelo cliente
-- `scope_key`: Contexto da idempotência (geralmente o `externalId`)
-- `type`: Tipo do comando (ex: `create_occurrence`)
+### TTL e Cleanup (Expiração de comandos)
 
-**Validação de Payload Diferente:**
+Para evitar crescimento infinito do `command_inbox`, o sistema define expiração (TTL) dos comandos.
 
-Se a mesma `idempotency_key` + `scope_key` for usada com payload diferente, o sistema retorna `409 Conflict` para evitar inconsistências.
+- **TTL padrão**: 24 horas
+- **Configurável via ENV** (ex.: `IDEMPOTENCY_TTL=86400` em segundos)
+- A expiração é registrada em `expires_at`. Isso permite deduplicação e rastreabilidade durante a janela de 24h (ou conforme configurado).
 
-**Validações de Negócio Adicionais:**
+#### Estratégia de Cleanup (não pesa request)
 
-- Criação de despacho valida que não existe outro despacho com o mesmo `resource_code` na mesma ocorrência (lança `DomainException`).
-- Transições de status são validadas no domínio (ex.: não é possível resolver ocorrência já cancelada).
+O cleanup foi pensado para **não rodar dentro do fluxo de request**, evitando custo extra (locks/deletes) em cada chamada.
+
+✅ **Abordagem:**
+
+Um processo/worker separado (ex.: "Cleanup Worker" ou um schedule dedicado) roda 1x por dia de madrugada e remove comandos expirados:
+
+**Exemplo de comando esperado:**
+```bash
+php artisan command-inbox:cleanup-expired
+```
+
+Nesta entrega, o cleanup pode estar descrito como estratégia e/ou implementado como job agendado, dependendo do estágio do projeto.
 
 ---
 
 ## 6. Estratégia de Concorrência
 
-Para evitar condições de corrida (race conditions), o sistema utiliza múltiplas camadas de proteção.
+Para evitar race conditions, o sistema utiliza múltiplas camadas de proteção.
 
-### Mecanismos Implementados
+### Mecanismos
 
-#### 1. Transações de Banco
-
-Todas as operações críticas executam dentro de transações atômicas:
+#### Transações atômicas
 
 ```php
 DB::transaction(function () {
@@ -349,290 +353,185 @@ DB::transaction(function () {
 });
 ```
 
-#### 2. Lock Pessimista (lockForUpdate)
+#### Lock pessimista (lockForUpdate)
 
-Uso de `lockForUpdate()` para serializar operações concorrentes:
-
-- **No Command Inbox**: Garante que apenas uma requisição registra o comando
-- **Nas Entidades**: Garante que apenas um Worker-Occurrence processa a mesma entidade por vez
+- **No `command_inbox`** (evita corrida na criação/leitura do comando)
+- **Nas entidades** (serializa mudança de status e evita lost update)
 
 ```php
 CommandInboxModel::query()
     ->where('idempotency_key', $key)
     ->where('scope_key', $scope)
-    ->lockForUpdate()  // ← Lock pessimista
+    ->lockForUpdate()
     ->first();
 ```
 
-#### 3. Padrão Outbox
+#### Outbox transacional
 
-O sistema utiliza o padrão **Outbox** para garantir publicação atômica de eventos:
+- `command_inbox` + `outbox` na mesma transação
 
-- **Registro na tabela `outbox`**: Eventos são registrados na tabela `outbox` (status: `PENDING`) dentro da mesma transação do `command_inbox`
-- **Publicação assíncrona**: Worker-Publish processa eventos `PENDING` periodicamente e publica na fila
-- **Atomicidade**: Se a publicação na fila falhar, o evento permanece `PENDING` e será reprocessado
-- **Rastreabilidade**: Todos os eventos são rastreados na tabela `outbox` antes da publicação
+#### Worker-Publish com FOR UPDATE SKIP LOCKED
 
-#### 4. Registro Prévio do Comando
-
-O comando é registrado no `command_inbox` **antes** do envio à fila:
-
-- Garante rastreabilidade mesmo se a fila falhar
-- Permite verificação de duplicatas antes do processamento
-- Evita processamento duplicado em cenários de concorrência
-
-#### 5. Validação de Estado no Worker
-
-O Worker-Occurrence também valida o status antes de processar:
-
-- Verifica se o comando já foi processado
-- Valida transições de estado permitidas
-- Evita reprocessamento indevido
-
-#### 6. Lock no Worker-Publish
-
-O Worker-Publish utiliza `FOR UPDATE SKIP LOCKED` para processar eventos:
-
-- Múltiplas instâncias podem processar eventos diferentes simultaneamente
-- Cada evento é processado apenas uma vez
-- Lock ativo durante o processamento evita duplicação
+- Permite múltiplas instâncias processarem eventos diferentes
+- Evita 2 workers processarem o mesmo evento
 
 ### Garantias
 
-Isso garante que:
-
-- ✅ Duas requisições simultâneas com a mesma chave não criam comandos duplicados
-- ✅ Apenas um Worker-Occurrence processa a mesma entidade por vez
-- ✅ Transições de estado inválidas são bloqueadas
-- ✅ Consistência de dados mesmo em alta concorrência
+- ✅ Requisições simultâneas não duplicam comandos
+- ✅ Apenas um worker processa uma entidade por vez
+- ✅ Transições inválidas são bloqueadas pelo domínio
+- ✅ Consistência sob concorrência
 
 ---
 
 ## 7. Pontos de Falha e Recuperação
 
-O sistema foi projetado para ser resiliente, considerando os principais pontos de falha e suas estratégias de recuperação.
+### 1. Falha na API (antes do commit)
 
-### 1. Falha na API
+- Nada é persistido
+- Cliente pode reenviar com a mesma `Idempotency-Key`
 
-**Cenário**: API falha antes de registrar o comando
+### 2. Falha durante a transação (antes do commit)
 
-**Comportamento**:
-- Nada é persistido no banco de dados
-- Cliente recebe erro (500, 503, etc.)
-
-**Recuperação**:
-- Cliente pode reenviar a requisição com a mesma `Idempotency-Key`
-- Sistema processará normalmente (não há duplicação)
-
-### 2. Falha após Registro, antes do Registro na Outbox
-
-**Cenário**: Comando registrado no `command_inbox`, mas falha ao registrar na `outbox`
-
-**Comportamento**:
-- Transação é revertida (rollback)
-- Nada é persistido no banco de dados
-- Cliente recebe erro (500, 503, etc.)
-
-**Recuperação**:
-- Cliente pode reenviar a requisição com a mesma `Idempotency-Key`
-- Sistema processará normalmente (não há duplicação)
+- Ex.: erro ao inserir `outbox`/`command`
+- A transação dá rollback e nenhum registro é persistido
+- Cliente pode reenviar com segurança
 
 ### 3. Falha no Worker-Publish
 
-**Cenário**: Worker-Publish não consegue publicar evento na fila
-
-**Comportamento**:
-- Evento fica na tabela `outbox` com status `PENDING` ou `PROCESSING`
-- Comando fica no `command_inbox` com status `RECEIVED`
-- Cliente já recebeu `202 Accepted` com `command_id`
-
-**Recuperação**:
-- Worker-Publish reprocessa eventos `PENDING` automaticamente (execução a cada minuto)
-- Eventos `PROCESSING` antigos podem ser resetados para `PENDING` manualmente
-- Falhas temporárias (ex: RabbitMQ indisponível) são tratadas automaticamente
-- Falhas definitivas (ex: comando não encontrado) marcam evento como `FAILED` na `outbox`
+- Eventos ficam `PENDING`/`PROCESSING`
+- Reprocessamento automático na próxima execução
+- Eventos travados em `PROCESSING` podem ser retomados via rotina de manutenção
 
 ### 4. Falha no Worker-Occurrence
 
-**Cenário**: Processamento do comando falha no Worker-Occurrence
+- Comando vai para `FAILED` (com erro)
+- `failed_jobs` pode receber job após retries
+- Pode ser reprocessado manualmente conforme estratégia
 
-**Comportamento**:
-- Status é atualizado para `FAILED` no `command_inbox`
-- Erro é registrado no campo `error_message`
-- Comando é movido para `failed_jobs` (DLQ do Laravel) após retries
+### 5. Falha no RabbitMQ
 
-**Recuperação**:
-- Comando pode ser reprocessado posteriormente (retry manual)
-- Comandos com status `FAILED` permitem retry com mesma `Idempotency-Key`
-- Administrador pode analisar erros e corrigir antes de reprocessar
+- API não perde eventos: ficam no Outbox
+- Worker-Publish retenta quando o broker voltar
 
-### 5. Falha na Fila (RabbitMQ)
+### 6. Falha no banco
 
-**Cenário**: RabbitMQ indisponível ou fila cheia
+- Escritas falham (API retorna erro)
+- Worker-Publish não consegue ler Outbox
+- **Recuperação**: retentativa após o DB voltar + práticas de HA (fora do escopo)
 
-**Comportamento**:
-- Eventos ficam na tabela `outbox` com status `PENDING` ou `PROCESSING`
-- Comando fica no `command_inbox` com status `RECEIVED`
-- Worker-Publish detecta falha temporária e marca evento como `PENDING` novamente
+### Estratégias de resiliência
 
-**Recuperação**:
-- Quando RabbitMQ voltar, Worker-Publish reprocessa eventos `PENDING` automaticamente
-- Sistema mantém rastreabilidade completa na tabela `outbox`
-- Não há perda de eventos mesmo em falhas de infraestrutura
-
-### 6. Falha no Banco de Dados
-
-**Cenário**: PostgreSQL indisponível
-
-**Comportamento**:
-- Operações de escrita falham
-- API retorna erro 503 (Service Unavailable)
-- Worker-Publish não consegue ler eventos da `outbox`
-
-**Recuperação**:
-- Cliente pode retentar após intervalo
-- Worker-Publish retenta automaticamente quando banco voltar
-- Sistema deve implementar health checks e circuit breakers
-- Backup e replicação garantem disponibilidade
-
-### Estratégias de Resiliência
-
-- **Idempotência**: Permite retries seguros
-- **Padrão Outbox**: Garante publicação atômica de eventos na fila
-- **Rastreabilidade**: Todos os comandos e eventos são registrados
-- **Desacoplamento**: API não depende do processamento
-- **DLQ Tripla**: `outbox` (status `FAILED`) + `command_inbox` (status `FAILED`) + `failed_jobs` (infraestrutura)
-- **Locks Pessimistas**: Previnem condições de corrida
-- **Processamento Assíncrono**: Worker-Publish processa eventos independentemente da API
+- **Idempotência** (retries seguros)
+- **Outbox** (não perde evento)
+- **Rastreamento total** (`command_inbox` + `outbox`)
+- **Desacoplamento** (API não bloqueia processamento)
+- **DLQ tripla**: `outbox`(FAILED) + `command_inbox`(FAILED) + `failed_jobs`
 
 ---
 
-## 8. O que ficou de fora
+## 8. Como Validar Rapidamente (CURLs)
 
-Para manter a solução viável no contexto atual, não foram implementados os seguintes itens:
+Ajuste `X-API-Key` conforme seu `.env` / `.env.example`.
 
-### Funcionalidades não Implementadas
+Exemplos abaixo assumem API local em `http://localhost:8089`.
 
-#### Limpeza Automática de Comandos Expirados
+### 1) Criar ocorrência via integração externa (assíncrono)
 
-- **Status**: Não implementado
-- **O que existe**: Limpeza de comandos expirados foi removida do fluxo principal de processamento (otimização de performance)
-- **O que falta**: 
-  - Comando de limpeza agendado (`command-inbox:cleanup-expired`)
-  - Processo dedicado para executar limpeza periódica (cron job ou scheduler dedicado)
-  - Limpeza automática de registros com `expires_at` vencido na tabela `command_inbox`
-- **Justificativa**: A limpeza foi removida do fluxo principal para evitar locks e custo desnecessário. Pode ser implementada como processo separado quando necessário.
+```bash
+curl -X POST "http://localhost:8089/api/integrations/occurrences" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: <API_KEY_EXTERNA>" \
+  -H "Idempotency-Key: ext-2026-000123-create" \
+  -d '{
+    "externalId": "EXT-2026-000123",
+    "type": "incendio_urbano",
+    "description": "Incêndio em residência",
+    "reportedAt": "2026-02-01T14:32:00-03:00"
+  }'
+```
 
-#### Dead Letter Queue Dedicada
+**Resposta esperada**: `202 Accepted` com `command_id`.
 
-- **Status**: Parcialmente implementado
-- **O que existe**: `command_inbox` (status `failed`) e `failed_jobs` (Laravel)
-- **O que falta**: DLQ estruturada no RabbitMQ com reprocessamento automático
+### 2) Consultar status do comando
 
-#### Retry Automático com Backoff Exponencial no Worker-Occurrence
+```bash
+curl -X GET "http://localhost:8089/api/commands/<command_id>" \
+  -H "X-API-Key: <API_KEY_INTERNA>"
+```
 
-- **Status**: Não implementado
-- **O que existe**: Retry do Laravel (configurável, mas não exponencial)
-- **O que falta**: Retry automático com backoff exponencial para comandos `FAILED`
+### 3) Listar ocorrências
 
-#### Observabilidade Avançada
-
-- **Status**: Parcialmente implementado
-- **O que existe**: Logs estruturados com contexto
-- **O que falta**: 
-  - Métricas distribuídas (Prometheus/Grafana)
-  - Distributed Tracing (OpenTelemetry)
-  - Correlation-ID único por requisição
-  - Dashboards de monitoramento
-
-#### Circuit Breaker para Integrações Externas
-
-- **Status**: Não implementado
-- **O que falta**: Proteção contra cascata de falhas em integrações externas
-
-### Justificativa
-
-Esses pontos podem ser evoluídos conforme o sistema cresça e as necessidades aumentem. A arquitetura atual permite adicionar essas funcionalidades sem grandes refatorações.
+```bash
+curl -X GET "http://localhost:8089/api/occurrences?status=in_progress&type=incendio_urbano" \
+  -H "X-API-Key: <API_KEY_INTERNA>"
+```
 
 ---
 
-## 9. Possível Evolução na Corporação
+## 9. Testes Automatizados
 
-Em um cenário corporativo maior, o sistema poderia evoluir para as seguintes melhorias:
+Existem testes automatizados na API e nos Workers.
 
-### Arquitetura e Padrões
+### Rodando testes na API
 
-#### Separação Formal entre Write Model e Read Model (CQRS Completo)
+1. Suba o ambiente (se necessário):
+```bash
+make api BASE_DIR=/diretorio/desejado
+```
 
-- **Benefício**: Otimização de leitura e escrita independentes
-- **Implementação**: Modelos de leitura otimizados em Redis/Elasticsearch
-- **Impacto**: Melhor performance em consultas complexas
+2. Entre no container:
+```bash
+make bash-api
+```
 
-#### Event Sourcing para Rastreabilidade Histórica
+3. Rode os testes:
+```bash
+php artisan test
+# ou
+./vendor/bin/phpunit
+```
 
-- **Benefício**: Histórico completo e imutável de todas as mudanças
-- **Implementação**: Armazenar eventos ao invés de estado atual
-- **Impacto**: Auditoria completa e possibilidade de reconstruir estado em qualquer ponto
+### Rodando testes no Worker-Occurrence
 
-### Observabilidade e Monitoramento
+```bash
+make worker BASE_DIR=/diretorio/desejado
+make bash-worker
+php artisan test
+```
 
-#### Monitoramento com Métricas (Prometheus / Grafana)
+### Rodando testes no Worker-Publish
 
-- **Benefício**: Visibilidade completa do sistema em tempo real
-- **Implementação**: 
-  - Exportar métricas para Prometheus
-  - Dashboards no Grafana
-  - Alertas configuráveis
-- **Impacto**: Detecção proativa de problemas
+```bash
+make worker-publish BASE_DIR=/diretorio/desejado
+make bash-worker-publish
+php artisan test
+```
 
-### Infraestrutura e Mensageria
+Os testes cobrem cenários como: idempotência, transições válidas/inválidas, auditoria, e concorrência simulada (quando aplicável).
 
-#### Limpeza Automática de Comandos Expirados
+---
 
-- **Benefício**: Manutenção automática do banco de dados, removendo registros antigos
-- **Implementação**: 
-  - Comando de limpeza (`command-inbox:cleanup-expired`)
-  - Processo dedicado (cron job ou scheduler) para execução periódica
-  - Configuração de TTL e frequência de limpeza
-- **Impacto**: 
-  - Redução do tamanho da tabela `command_inbox`
-  - Melhor performance em consultas
-  - Manutenção automatizada sem intervenção manual
+## 10. O que ficou de fora
 
-#### Dead Letter Queue Estruturada
+Para manter a solução viável no contexto atual, não foram implementados (ou ficaram como evolução):
 
-- **Benefício**: Reprocessamento automático e análise de falhas
-- **Implementação**: DLQ no RabbitMQ com workers dedicados
-- **Impacto**: Recuperação automática de falhas temporárias
+- **Cleanup automático completo** (rodando em produção como worker/schedule dedicado) — estratégia descrita
+- **DLQ dedicada no RabbitMQ** (além do `failed_jobs` e status `FAILED`)
+- **Retry com backoff exponencial real**
+- **Observabilidade avançada** (métricas + tracing + correlation-id fim-a-fim)
+- **Circuit breaker** para integrações externas
 
-#### API Gateway Centralizado
+A arquitetura já permite adicionar esses itens sem grandes refatorações.
 
-- **Benefício**: Gerenciamento unificado de APIs
-- **Implementação**: Kong, AWS API Gateway, ou similar
-- **Impacto**: 
-  - Rate limiting centralizado
-  - Autenticação unificada
-  - Roteamento inteligente
-  - Analytics centralizado
+---
 
-### Segurança e Autenticação
+## 11. Possível Evolução na Corporação
 
-#### Autenticação via OAuth2 / JWT ao invés de API Key
-
-- **Benefício**: Segurança mais robusta e flexível
-- **Implementação**: 
-  - OAuth2 para sistemas externos
-  - JWT para autenticação interna
-  - Refresh tokens
-- **Impacto**: Melhor controle de acesso e auditoria
-
-### Escalabilidade
-
-#### Autoscaling Horizontal de Workers
-
-- **Benefício**: Escalabilidade automática baseada em carga
-- **Implementação**: 
-  - Kubernetes com HPA (Horizontal Pod Autoscaler)
-  - Métricas de fila como trigger para Worker-Occurrence
-  - Métricas de `outbox` (eventos `PENDING`) como trigger para Worker-Publish
-- **Impacto**: Resposta automática a picos de demanda
+- **CQRS formal** (read model separado)
+- **Event sourcing** (histórico imutável)
+- **Observabilidade** (Prometheus/Grafana + OpenTelemetry)
+- **DLQ estruturada no RabbitMQ** + reprocessamento assistido
+- **API gateway** (Kong/AWS API Gateway)
+- **Auth mais robusta** (OAuth2/JWT)
+- **Autoscaling de workers** (Kubernetes/HPA com métricas de fila/outbox)
