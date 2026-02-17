@@ -292,6 +292,7 @@ A idempotência é **obrigatória** na criação de ocorrências e em todas as o
   - `POST /api/integrations/occurrences` (integração externa)
   - `POST /api/occurrences/{id}/start`
   - `POST /api/occurrences/{id}/resolve`
+  - `POST /api/occurrences/{id}/cancel`
   - `POST /api/occurrences/{id}/dispatches`
   - `POST /api/dispatches/{id}/close`
   - `PATCH /api/dispatches/{id}/status`
