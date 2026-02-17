@@ -1,5 +1,15 @@
 # Prova Bomb - Sistema de Gerenciamento de Ocorrências
 
+## Acesso ao Sistema em Produção
+
+O sistema está disponível em produção no seguinte endereço:
+
+- **Frontend**: [http://138.197.101.197:8088](http://138.197.101.197:8088)
+
+> **Nota**: Para desenvolvimento local, consulte a seção "Como Rodar Backend e Frontend" abaixo.
+
+---
+
 ## 1. Como Rodar Backend e Frontend
 
 ### Ambiente Recomendado
