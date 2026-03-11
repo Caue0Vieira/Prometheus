@@ -1,4 +1,4 @@
-# Prova Bomb (Prometheus) — Sistema de Gerenciamento de Ocorrências
+# (Prometheus) — Sistema de Gerenciamento de Ocorrências
 
 ## Acesso ao Sistema em Dev
 
