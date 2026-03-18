@@ -1,11 +1,5 @@
 # (Prometheus) — Sistema de Gerenciamento de Ocorrências
 
-## Acesso ao Sistema em Dev
-
-**Frontend**: [http://138.197.101.197:8088](http://138.197.101.197:8088)
-
-> Para desenvolvimento local, consulte "Como Rodar Backend e Frontend".
-
 ---
 
 ## Sumário
